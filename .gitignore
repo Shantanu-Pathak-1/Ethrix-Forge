@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment files
+.env
+.env.*
+
+# Logs and databases
+*.log
+*.sqlite
+
+# Local configurations
+.ethrix_config.json
+
+# Local IDE configuration
+.vscode/
+
+# OS generated files
+Thumbs.db
+Desktop.ini

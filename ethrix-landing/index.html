@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      const theme = localStorage.getItem('theme') || 'dark';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethrix Forge - AI-Based Code Review Assistant</title>
+  <meta name="description"
+    content="A functional hackathon prototype for automated AI code review, logical bug detection, security vulnerability identification, and code optimization." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="css/all.min.css" />
+
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'space': 'rgb(var(--background-rgb))',
+            'space-light': 'rgb(var(--muted-rgb))',
+            'space-card': 'rgb(var(--card-rgb))',
+            'neon': 'rgb(var(--primary-rgb))',
+            'neon-dim': 'rgb(var(--ring-rgb))',
+            'neon-glow': 'rgb(var(--accent-rgb))',
+            'neon-border': 'rgb(var(--border-rgb))',
+            'purple-glow': 'rgb(var(--chart-3-rgb))',
+            'amber-glow': 'rgb(var(--chart-4-rgb))',
+            'rose-glow': 'rgb(var(--destructive-rgb))',
+            'emerald-glow': 'rgb(var(--chart-2-rgb))',
+            background: 'rgb(var(--background-rgb))',
+            foreground: 'rgb(var(--foreground-rgb))',
+            card: 'rgb(var(--card-rgb))',
+            border: 'rgb(var(--border-rgb))',
+            primary: 'rgb(var(--primary-rgb))',
+            muted: 'rgb(var(--muted-rgb))',
+            accent: 'rgb(var(--accent-rgb))',
+            ring: 'rgb(var(--ring-rgb))',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          boxShadow: {
+            'neon': '0 0 25px rgba(161, 161, 161, 0.1), 0 0 70px rgba(161, 161, 161, 0.05)',
+            'neon-sm': '0 0 12px rgba(161, 161, 161, 0.15)',
+            'card': '0 12px 40px rgba(0, 0, 0, 0.05)',
+            'inner-glow': 'inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+          },
+          backdropBlur: {
+            'glass': '16px',
+          },
+          animation: {
+            'pulse-neon': 'pulseNeon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'fade-in': 'fadeIn 0.5s ease-out',
+            'shimmer': 'shimmer 2.5s infinite',
+          },
+          keyframes: {
+            pulseNeon: {
+              '0%, 100%': { opacity: '1', boxShadow: '0 0 10px rgba(161,161,161,0.15)' },
+              '50%': { opacity: '0.7', boxShadow: '0 0 25px rgba(161,161,161,0.3)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0', transform: 'translateY(15px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    /* Light Theme */
+    :root {
+      --background: #f5f7fb;
+      --card: rgba(226, 232, 240, 0.9);
+      --popover: rgba(0, 0, 0, 0.96);
+      --border: rgba(148, 163, 184, 0.24);
+      --muted: rgba(241, 245, 249, 0.95);
+      --accent: rgba(226, 232, 240, 0.95);
+      --ring: #5b6b84;
+      --foreground: #0f172a;
+      --primary: #6d28d9;
+      --primary-foreground: #ffffff;
+      --sidebar: rgba(226, 232, 240, 0.88);
+      --sidebar-border: rgba(148, 163, 184, 0.24);
+      --sidebar-primary: rgba(237, 233, 254, 0.95);
+      --sidebar-primary-foreground: #4c1d95;
+      --muted-foreground: #475569;
+      --accent-foreground: #0f172a;
+      --popover-foreground: #0f172a;
+      --sidebar-foreground: #0f172a;
+      --sidebar-accent: rgba(237, 233, 254, 0.72);
+
+      /* Missing variables */
+      --radius: 12px;
+      --destructive: #dc2626;
+      --chart-3: #7c3aed;
+
+      /* RGB variables for Tailwind opacity support */
+      --background-rgb: 245, 247, 251;
+      --foreground-rgb: 15, 23, 42;
+      --card-rgb: 226, 232, 240;
+      --border-rgb: 148, 163, 184;
+      --primary-rgb: 109, 40, 217;
+      --muted-rgb: 241, 245, 249;
+      --accent-rgb: 237, 233, 254;
+      --ring-rgb: 91, 107, 132;
+      --chart-2-rgb: 20, 184, 166;
+      --chart-3-rgb: 124, 58, 237;
+      --chart-4-rgb: 245, 158, 11;
+      --destructive-rgb: 244, 63, 94;
+    }
+
+    /* Dark Theme */
+    .dark {
+      --background: #07111f;
+      --card: rgba(15, 23, 42, 0.82);
+      --popover: rgba(15, 23, 42, 0.92);
+      --border: rgba(148, 163, 184, 0.18);
+      --muted: rgba(15, 23, 42, 0.86);
+      --accent: rgba(30, 41, 59, 0.9);
+      --ring: #94a3b8;
+      --foreground: #f8fafc;
+      --primary: #8b5cf6;
+      --primary-foreground: #ffffff;
+      --sidebar: rgba(15, 23, 42, 0.9);
+      --sidebar-border: rgba(148, 163, 184, 0.18);
+      --sidebar-primary: rgba(59, 130, 246, 0.22);
+      --sidebar-primary-foreground: #f8fafc;
+      --muted-foreground: #cbd5e1;
+      --accent-foreground: #f8fafc;
+      --popover-foreground: #f8fafc;
+      --sidebar-foreground: #f8fafc;
+      --sidebar-accent: rgba(30, 41, 59, 0.95);
+
+      /* Missing variables */
+      --radius: 12px;
+      --destructive: #f87171;
+      --chart-3: #c084fc;
+
+      /* RGB variables for Tailwind opacity support */
+      --background-rgb: 7, 17, 31;
+      --foreground-rgb: 248, 250, 252;
+      --card-rgb: 15, 23, 42;
+      --border-rgb: 71, 85, 105;
+      --primary-rgb: 139, 92, 246;
+      --muted-rgb: 15, 23, 42;
+      --accent-rgb: 30, 41, 59;
+      --ring-rgb: 148, 163, 184;
+      --chart-2-rgb: 52, 211, 153;
+      --chart-3-rgb: 192, 132, 252;
+      --chart-4-rgb: 251, 191, 36;
+      --destructive-rgb: 248, 113, 113;
+    }
+
+    /* Shared Theme Surfaces */
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      overflow-x: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Modern Ambient Glow Blobs CSS Keyframe Animations */
+    @keyframes blobFloat1 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(30px, -50px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+    @keyframes blobFloat2 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(-40px, 40px) scale(1.05); }
+    }
+    @keyframes blobFloat3 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(-25px, 25px) scale(0.95); }
+      66% { transform: translate(40px, -30px) scale(1.08); }
+    }
+    @keyframes blobFloat4 {
+      0%, 100% { transform: translate(0px, 0px) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.03); }
+    }
+
+    .animate-blob-float-1 { animation: blobFloat1 25s ease-in-out infinite; }
+    .animate-blob-float-2 { animation: blobFloat2 20s ease-in-out infinite; }
+    .animate-blob-float-3 { animation: blobFloat3 22s ease-in-out infinite; }
+    .animate-blob-float-4 { animation: blobFloat4 28s ease-in-out infinite; }
+
+
+    /* Shared Components */
+    .glass {
+      background: var(--card);
+      backdrop-filter: blur(22px) saturate(140%);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      box-shadow:
+        0 16px 45px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.38);
+      transition: transform 0.25s ease, background 0.3s, border 0.3s, box-shadow 0.3s;
+    }
+
+    .dark .glass {
+      background: var(--card);
+      border: 1px solid var(--border);
+      box-shadow:
+        0 22px 55px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    html:not(.dark) .glass {
+      background: rgba(226, 232, 240, 0.9);
+      border-color: rgba(100, 116, 139, 0.2);
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .glass:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Shared Utilities */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--ring);
+    }
+
+    /* Shared Buttons */
+    .btn-neon {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease-in-out;
+      letter-spacing: 0.04em;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-neon:hover {
+      background: var(--accent);
+      border-color: var(--ring);
+      box-shadow: 0 10px 24px rgba(124, 58, 237, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .btn-solid {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.95), rgba(79, 70, 229, 0.95));
+      color: var(--primary-foreground);
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.25s ease-in-out;
+      letter-spacing: 0.04em;
+      box-shadow: 0 14px 28px rgba(109, 40, 217, 0.18);
+    }
+
+    .btn-solid:hover {
+      box-shadow: 0 18px 34px rgba(109, 40, 217, 0.24);
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    /* Shared Editor Blocks */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--muted);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag-over {
+      border-color: var(--ring);
+      background: var(--accent);
+    }
+
+    /* Shared IDE Blocks */
+    .ide-wrapper {
+      display: flex;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+      transition: border 0.3s, background 0.3s;
+    }
+
+    .ide-gutter {
+      width: 40px;
+      background: var(--muted);
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+      user-select: none;
+      overflow: hidden;
+      text-align: right;
+    }
+
+    .ide-gutter .ln {
+      display: block;
+      padding-right: 8px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-foreground);
+      line-height: 20px;
+      opacity: 0.6;
+    }
+
+    .ide-gutter .ln.active-ln {
+      color: var(--primary);
+      font-weight: 600;
+      opacity: 1;
+    }
+
+    .ide-textarea {
+      flex: 1;
+      resize: none;
+      background: transparent;
+      color: var(--foreground);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 20px;
+      padding: 12px 14px;
+      border: none;
+      outline: none;
+      tab-size: 2;
+      height: 280px;
+      overflow-y: auto;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* Shared Markdown Output */
+    .md-content h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .md-content h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--foreground);
+      margin: 16px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .md-content h2::before {
+      content: '##';
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-foreground);
+    }
+
+    .md-content h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--chart-3);
+      margin: 12px 0 6px;
+    }
+
+    .md-content p {
+      font-size: 0.78rem;
+      color: var(--muted-foreground);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .md-content ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+
+    .md-content ul li {
+      font-size: 0.78rem;
+      color: var(--muted-foreground);
+      line-height: 1.5;
+      padding: 2px 0 2px 16px;
+      position: relative;
+    }
+
+    .md-content ul li::before {
+      content: 'â€º';
+      position: absolute;
+      left: 4px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .md-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      background: var(--muted);
+      color: var(--primary);
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .md-content pre {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+
+    .md-content pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 10.5px;
+      color: var(--foreground);
+    }
+
+    .md-content blockquote {
+      border-left: 3px solid var(--primary);
+      padding: 4px 12px;
+      margin: 8px 0;
+      background: var(--muted);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .md-content blockquote p {
+      margin: 0;
+      color: var(--foreground);
+      opacity: 0.8;
+    }
+
+    .md-content strong {
+      color: var(--foreground);
+      font-weight: 700;
+    }
+
+    .md-content em {
+      color: var(--chart-3);
+      font-style: italic;
+    }
+
+    .md-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+
+    .hero-badge {
+      box-shadow: 0 14px 34px rgba(109, 40, 217, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    html:not(.dark) .hero-badge {
+      background: rgba(237, 233, 254, 0.9);
+      color: #5b21b6;
+      border-color: rgba(167, 139, 250, 0.45);
+      box-shadow: 0 12px 28px rgba(124, 58, 237, 0.14);
+    }
+
+    .hero-title {
+      text-wrap: balance;
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+      text-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+    }
+
+    html:not(.dark) .hero-title,
+    html:not(.dark) .hero-title .text-transparent {
+      color: #0f172a !important;
+      text-shadow: none;
+    }
+
+    html:not(.dark) .hero-title .text-transparent {
+      background-image: none !important;
+      -webkit-text-fill-color: #0f172a !important;
+    }
+
+    .section-kicker {
+      letter-spacing: 0.18em;
+    }
+
+    .hero-feature {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    html:not(.dark) .hero-feature {
+      background: rgba(226, 232, 240, 0.84);
+      border-color: rgba(148, 163, 184, 0.24);
+    }
+
+    html:not(.dark) .hero-feature p {
+      color: #0f172a !important;
+    }
+
+    /* Shared Badges */
+    .badge-critical {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(231, 0, 11, 0.1);
+      color: var(--destructive);
+      border: 1px solid rgba(231, 0, 11, 0.2);
+    }
+
+    .badge-warn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.1);
+      color: #D97706;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .badge-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .badge-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--muted);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+
+    /* Ring Spinner */
+    .neon-spinner-wrap {
+      position: relative;
+      width: 68px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .neon-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      animation: spinRing 2s linear infinite;
+    }
+
+    .neon-ring-1 {
+      inset: 0;
+      border-top-color: var(--primary);
+      border-right-color: var(--border);
+      animation-duration: 1.2s;
+    }
+
+    .neon-ring-2 {
+      inset: 10px;
+      border-bottom-color: var(--chart-3);
+      border-left-color: var(--border);
+      animation-duration: 1.8s;
+      animation-direction: reverse;
+    }
+
+    .neon-ring-3 {
+      inset: 20px;
+      border-top-color: var(--ring);
+      animation-duration: 0.8s;
+    }
+
+    .neon-core {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+
+    @keyframes spinRing {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen font-sans selection:bg-primary/20 selection:text-primary">
+  <!-- Floating Background Paths & Modern Ambient Glow Backdrop -->
+  <div id="ambient-backdrop" class="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
+    
+    <!-- Modern Blur Mesh Gradient Blobs -->
+    <div class="absolute inset-0 z-0 opacity-100 dark:opacity-80 transition-opacity duration-500">
+      <!-- Purple Glow Blob -->
+      <div class="absolute top-[10%] left-[5%] w-[45vw] h-[45vw] min-w-[320px] rounded-full bg-purple-600/12 dark:bg-purple-600/8 blur-[130px] animate-blob-float-1"></div>
+      
+      <!-- Cyan/Teal Glow Blob -->
+      <div class="absolute bottom-[10%] right-[10%] w-[40vw] h-[40vw] min-w-[300px] rounded-full bg-teal-500/10 dark:bg-teal-500/6 blur-[120px] animate-blob-float-2"></div>
+      
+      <!-- Warm Orange/Amber Glow Blob -->
+      <div class="absolute top-[-10%] right-[-5%] w-[35vw] h-[35vw] min-w-[280px] rounded-full bg-amber-500/8 dark:bg-amber-600/4 blur-[110px] animate-blob-float-3"></div>
+
+      <!-- Indigo Glow Blob -->
+      <div class="absolute bottom-[-15%] left-[20%] w-[38vw] h-[38vw] min-w-[280px] rounded-full bg-indigo-500/10 dark:bg-indigo-600/6 blur-[120px] animate-blob-float-4"></div>
+    </div>
+
+    <!-- GPU-Accelerated Canvas Paths (Rendered on top of blobs) -->
+    <canvas id="paths-canvas" class="absolute inset-0 w-full h-full" style="object-fit: fill;"></canvas>
+  </div>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       HEADER / NAVBAR
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <header class="sticky top-0 z-50 w-full bg-space/70 backdrop-blur-xl">
+    <div class="container mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+
+      <!-- Brand Logo -->
+      <a href="#" class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center animate-pulse-neon"
+          style="background: linear-gradient(135deg, rgba(109,40,217,0.16), rgba(59,130,246,0.16)); border: 1px solid rgba(109,40,217,0.28); box-shadow: 0 12px 28px rgba(109,40,217,0.15);">
+          <svg class="w-4.5 h-4.5 text-neon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <span class="text-md font-bold tracking-wider font-mono text-slate-900 dark:text-white">Ethrix<span
+              class="text-neon">Forge</span></span>
+        </div>
+      </a>
+
+      <!-- Navigation & Badges -->
+      <div class="flex items-center gap-4">
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" onclick="toggleDarkMode()"
+          class="p-2 rounded-lg border border-border bg-slate-200/70 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center shadow-sm backdrop-blur-md"
+          title="Toggle Dark/Light Mode">
+          <i id="theme-toggle-icon" class="fa-solid fa-sun text-xs"></i>
+        </button>
+        <!-- Hackathon Round Badge -->
+        <span
+          class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-neon/10 border border-neon/25 text-neon hero-badge">
+          <span class="w-1.5 h-1.5 rounded-full bg-neon animate-ping"></span>
+          CodeVortex Hackathon 2026
+        </span>
+        <!-- Login Button -->
+        <button onclick="openLoginPanel()"
+          class="btn-neon text-xs md:text-sm py-1.5 px-4 rounded-lg flex items-center gap-2 cursor-pointer">
+          Login <i class="fa-solid fa-right-to-bracket text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       HERO SECTION
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <section class="relative z-10 pt-20 pb-24 overflow-hidden">
+    <div class="container mx-auto px-4 md:px-8 text-center max-w-6xl">
+
+      <!-- Project Target Header Badge -->
+      <div
+        class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-glow/10 border border-purple-glow/30 text-purple-600 dark:text-purple-300 text-xs font-semibold mb-6 animate-fade-in hero-badge">
+        <span class="w-1.5 h-1.5 rounded-full bg-purple-glow"></span>
+        AI-Based Code Review Assistant
+      </div>
+
+      <h1
+        class="hero-title font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-950 dark:text-white mb-6 mx-auto animate-fade-in max-w-5xl"
+        style="animation-delay: 0.1s">
+        Review, Fix, and Document Code<br>with <span
+          class="bg-gradient-to-r from-neon to-purple-glow bg-clip-text text-transparent">Elite AI Intelligence</span>
+      </h1>
+
+      <p class="text-slate-700 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed animate-fade-in"
+        style="animation-delay: 0.2s">
+        Ethrix Forge is an automated code reviewer that spots logical bugs, runs security audits, refactors
+        architecture,
+        and generates clean inline documentation instantly.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 mb-8 animate-fade-in" style="animation-delay: 0.35s">
+        <a href="#live-demo" class="btn-solid text-sm md:text-base py-3 px-6 rounded-xl">
+          Try Live Demo
+        </a>
+        <a href="#" onclick="handleOpenDashboard(event)"
+          class="btn-neon text-sm md:text-base py-3 px-6 rounded-xl flex items-center gap-2">
+          Open Developer Dashboard <i class="fa-solid fa-square-poll-vertical"></i>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto animate-fade-in"
+        style="animation-delay: 0.45s">
+        <div class="glass hero-feature rounded-2xl p-4 text-left">
+          <p class="text-[10px] uppercase tracking-[0.22em] text-neon font-bold mb-2">Static Scan</p>
+          <p class="text-sm font-semibold text-slate-950 dark:text-white">Finds logical bugs and risky patterns fast.
+          </p>
+        </div>
+        <div class="glass hero-feature rounded-2xl p-4 text-left">
+          <p class="text-[10px] uppercase tracking-[0.22em] text-purple-glow font-bold mb-2">Secure Refactor</p>
+          <p class="text-sm font-semibold text-slate-950 dark:text-white">Suggests cleaner code with safer structure.
+          </p>
+        </div>
+        <div class="glass hero-feature rounded-2xl p-4 text-left">
+          <p class="text-[10px] uppercase tracking-[0.22em] text-emerald-glow font-bold mb-2">Doc Generation</p>
+          <p class="text-sm font-semibold text-slate-950 dark:text-white">Produces readable docs and commit-ready notes.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       HACKATHON PROJECT SECTION
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <section class="relative z-10 py-12 bg-space-light/45">
+    <div class="container mx-auto px-4 md:px-8">
+      <div class="glass max-w-4xl mx-auto rounded-2xl p-6 md:p-8">
+        <div
+          class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-b border-neon-border pb-6 mb-6">
+          <div>
+            <h2 class="text-lg md:text-xl font-bold font-display text-slate-900 dark:text-white">CodeVortex Hackathon
+              Project</h2>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Official round submission and evaluation
+              prototype</p>
+          </div>
+          <span
+            class="px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-glow/15 border border-emerald-glow/30 text-emerald-600 dark:text-emerald-400">
+            PROTOTYPE APPROVED
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="md:col-span-2 space-y-4">
+            <div>
+              <p class="text-xs font-semibold text-neon uppercase tracking-wider">Problem Statement 4</p>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white mt-1">AI-Based Code Review Assistant</h3>
+              <p class="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                Build a system that reviews code, identifies common mistakes, and suggests improvements. Ensure the
+                system demonstrates clean utility, practical feasibility, and returns exact line-by-line remediation
+                details.
+              </p>
+            </div>
+            <div class="flex items-center gap-4 text-xs">
+              <span class="text-slate-500 font-mono">Domains:</span>
+              <span class="bg-space-light border border-neon-border px-2 py-0.5 rounded text-neon font-mono">AI</span>
+              <span class="bg-space-light border border-neon-border px-2 py-0.5 rounded text-neon font-mono">Software
+                Engineering</span>
+            </div>
+          </div>
+
+          <div
+            class="bg-slate-200/70 dark:bg-space/65 border border-neon-border/40 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2"><i
+                class="fa-solid fa-list-check me-1.5 text-neon"></i>Core Implementation</h4>
+            <ul class="text-[11px] text-slate-600 dark:text-slate-400 space-y-1.5">
+              <li><i class="fa-solid fa-circle-check text-neon me-1"></i> Static &amp; Logical Diagnostics</li>
+              <li><i class="fa-solid fa-circle-check text-neon me-1"></i> Secure Inline Refactoring</li>
+              <li><i class="fa-solid fa-circle-check text-neon me-1"></i> Automated Docstring Generation</li>
+              <li><i class="fa-solid fa-circle-check text-neon me-1"></i> High Developer Feasibility</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       LIVE INTERACTIVE DEMO (CORE)
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <section id="live-demo" class="relative z-10 py-20">
+    <div class="container mx-auto px-4 md:px-8">
+
+      <!-- Section Header -->
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <h2 class="text-2xl md:text-3xl font-bold font-display text-slate-900 dark:text-white">Interactive Code Analysis
+          Studio</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mt-3">
+          Paste your code, select your target action, and watch the AI run live diagnostic cycles. Connects directly to
+          our core FastAPI backend.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 max-w-6xl mx-auto">
+
+        <!-- Left: Code Input Card (7 columns) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          <div class="glass rounded-xl p-5 flex flex-col gap-4">
+
+            <!-- Editor Title bar -->
+            <div class="flex items-center justify-between border-b border-neon-border pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-glow"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-glow"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-glow"></span>
+                <span class="text-xs text-slate-500 font-mono ml-2">ethrix_editor.py</span>
+
+                <!-- File Loaded Chip -->
+                <span id="file-chip"
+                  class="hidden inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono font-medium">
+                  <span id="file-name-label">buggy.py</span>
+                  <button onclick="clearFile(event)" class="text-slate-500 hover:text-rose-glow transition-colors"><i
+                      class="fa-solid fa-xmark"></i></button>
+                </span>
+              </div>
+
+              <!-- Language selector -->
+              <div class="flex items-center gap-3">
+                <span id="lang-badge-display" class="lang-badge">PY</span>
+                <select id="lang-select"
+                  class="bg-space border border-neon-border/40 text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1 rounded-md outline-none focus:border-neon transition-colors font-mono">
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="rust">Rust</option>
+                  <option value="go">Go</option>
+                  <option value="cpp">C++</option>
+                  <option value="yaml">YAML</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div id="drop-zone" class="dropzone p-5 flex flex-col items-center justify-center gap-2"
+              ondragover="handleDragOver(e)" ondragleave="handleDragLeave(e)" ondrop="handleDrop(e)"
+              onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
+              <div
+                class="w-10 h-10 rounded-lg flex items-center justify-center bg-neon/10 border border-neon/20 text-neon transition-all hover:bg-neon/20">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+              </div>
+              <p id="drop-label" class="text-xs text-slate-700 dark:text-slate-300 font-medium">Drop file here or <span
+                  class="text-neon">browse</span></p>
+              <p id="drop-sub" class="text-[10px] text-slate-500 font-mono">.py Â· .js Â· .ts Â· .rs Â· .go Â· .cpp Â·
+                .yaml Â· .json</p>
+            </div>
+
+            <!-- IDE editor wrapper -->
+            <div class="ide-wrapper">
+              <!-- Gutter lines -->
+              <div id="ide-gutter" class="ide-gutter">
+                <!-- Javascript will inject line numbers -->
+              </div>
+              <!-- Textarea editor -->
+              <textarea id="code-input" class="ide-textarea" placeholder="# Paste your buggy code snippet here...
+
+def calculate_average(numbers):
+    total = 0
+    for n in numbers:
+        total += n
+    return total / len(numbers) # Throws ZeroDivisionError if empty!
+" oninput="renderLineNumbers()" onscroll="document.getElementById('ide-gutter').scrollTop = this.scrollTop"></textarea>
+            </div>
+
+            <!-- Editor Status bar -->
+            <div
+              class="flex items-center justify-between text-[11px] text-slate-500 font-mono border-t border-neon-border/40 pt-3">
+              <span id="cursor-pos">Ln 1, Col 1</span>
+              <span id="char-count">0 chars</span>
+            </div>
+          </div>
+
+          <!-- Action buttons row -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button id="btn-analyze" onclick="runAction('analyze')"
+              class="flex-1 bg-primary border border-border text-white hover:opacity-95 font-bold py-3.5 px-4 rounded-xl transition-all duration-200 active:scale-98 flex items-center justify-center gap-2 shadow-sm">
+              <i class="fa-solid fa-magnifying-glass"></i> <span id="analyze-label">Analyze Code</span>
+            </button>
+            <button id="btn-fix" onclick="runAction('fix')"
+              class="flex-1 bg-purple-glow/15 hover:bg-purple-glow/25 border border-purple-glow/35 hover:border-purple-glow/65 text-purple-700 dark:text-purple-300 font-bold py-3.5 px-4 rounded-xl transition-all duration-200 active:scale-98 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-purple-700 dark:text-purple-300"></i> Fix & Refactor
+            </button>
+            <button id="btn-docgen" onclick="runAction('docgen')"
+              class="flex-1 bg-space-light/40 hover:bg-space-light/70 border border-neon-border text-slate-700 dark:text-slate-300 font-bold py-3.5 px-4 rounded-xl transition-all duration-200 active:scale-98 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-file-code text-neon"></i> Generate Docs
+            </button>
+            <button onclick="clearEditor()"
+              class="px-4 py-3.5 bg-rose-glow/10 hover:bg-rose-glow/20 border border-rose-glow/30 hover:border-rose-glow/50 text-rose-700 dark:text-rose-400 rounded-xl transition-all"
+              title="Clear Editor">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Diagnostic Output Card (5 columns) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <div class="glass rounded-xl flex flex-col h-full min-h-[460px] overflow-hidden">
+
+            <!-- Output Header tab-switch -->
+            <div class="flex items-center justify-between border-b border-neon-border bg-space/35 px-4 py-2.5">
+              <div class="flex items-center gap-2 text-xs font-mono">
+                <span id="output-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                <span id="output-meta">No report yet</span>
+              </div>
+              <div class="flex gap-1">
+                <button id="tab-rendered" onclick="setOutputTab('rendered')"
+                  class="text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded bg-neon/12 text-neon transition-all">Report</button>
+                <button id="tab-raw" onclick="setOutputTab('raw')"
+                  class="text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded text-slate-500 hover:text-slate-300 transition-all">Raw</button>
+              </div>
+            </div>
+
+            <!-- Output Display Body -->
+            <div id="output-body" class="flex-1 p-5 overflow-y-auto">
+
+              <!-- Idle State -->
+              <div id="output-idle" class="flex flex-col items-center justify-center h-full gap-4 text-center py-10">
+                <svg class="w-12 h-12 text-slate-600 dark:text-slate-400 opacity-35" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div>
+                  <h3 class="text-sm font-bold text-slate-800 dark:text-slate-300 font-display">Console Ready</h3>
+                  <p class="text-xs text-slate-500 mt-1.5 max-w-[200px]">Paste some code and click an action button to
+                    initialize diagnostic review.</p>
+                </div>
+              </div>
+
+              <!-- Thinking / Loading State -->
+              <div id="output-thinking"
+                class="hidden flex flex-col items-center justify-center h-full gap-4 text-center py-10">
+                <div class="neon-spinner-wrap">
+                  <div class="neon-ring neon-ring-1"></div>
+                  <div class="neon-ring neon-ring-2"></div>
+                  <div class="neon-ring neon-ring-3"></div>
+                  <div class="neon-core"></div>
+                </div>
+                <div class="space-y-2 mt-2">
+                  <h4 id="thinking-label" class="text-xs font-bold text-neon font-mono tracking-widest">CONNECTING...
+                  </h4>
+                  <p id="thinking-sub" class="text-[10px] text-slate-500 max-w-[200px] leading-relaxed">Initializing
+                    secure pipeline connection.</p>
+                </div>
+                <div class="w-40 h-[2px] bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-2">
+                  <div id="spin-progress" class="h-full bg-neon transition-all duration-300" style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Rendered markdown report -->
+              <div id="output-rendered" class="md-content hidden flex-1"></div>
+
+              <!-- Raw markdown output -->
+              <pre id="output-raw"
+                class="hidden text-xs text-slate-700 dark:text-slate-300 font-mono bg-space/35 border border-neon-border/40 p-3 rounded-lg overflow-x-auto select-all whitespace-pre-wrap"></pre>
+            </div>
+
+            <!-- Output Footer Actions (grows when output ready) -->
+            <div id="output-actions-bar"
+              class="hidden border-t border-neon-border bg-space/25 px-4 py-3 flex items-center justify-end gap-2.5">
+              <button onclick="copyOutput()"
+                class="text-[10px] font-bold text-slate-600 dark:text-slate-400 hover:text-neon transition-colors flex items-center gap-1.5"><i
+                  class="fa-solid fa-copy"></i> Copy</button>
+              <button onclick="exportMarkdown()"
+                class="text-[10px] font-bold text-slate-600 dark:text-slate-400 hover:text-neon transition-colors flex items-center gap-1.5"><i
+                  class="fa-solid fa-download"></i> Export</button>
+            </div>
+          </div>
+
+          <!-- Live Performance Graph Panel -->
+          <div id="perf-panel"
+            class="hidden border border-neon-border/60 bg-space-card backdrop-blur rounded-xl p-4 flex flex-col gap-3.5">
+            <div>
+              <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider"><i
+                  class="fa-solid fa-chart-line me-1.5 text-neon"></i>Analysis Metrics</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">Automated code performance grading</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <!-- Metric Item 1 -->
+              <div>
+                <div class="flex justify-between items-center text-[10px] mb-1 font-medium">
+                  <span class="text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><span
+                      class="w-1.5 h-1.5 rounded-full bg-neon"></span>Code Health</span>
+                  <span id="health-val" class="font-mono text-neon font-bold">0%</span>
+                </div>
+                <div class="w-full bg-slate-800/60 rounded-full h-1.5 overflow-hidden">
+                  <div id="health-bar"
+                    class="h-full bg-gradient-to-r from-neon-dim to-neon transition-all duration-1000"
+                    style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Metric Item 2 -->
+              <div>
+                <div class="flex justify-between items-center text-[10px] mb-1 font-medium">
+                  <span class="text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><span
+                      class="w-1.5 h-1.5 rounded-full bg-purple-glow"></span>Time Saved</span>
+                  <span id="time-val" class="font-mono text-purple-600 dark:text-purple-300 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-slate-800/60 rounded-full h-1.5 overflow-hidden">
+                  <div id="time-bar"
+                    class="h-full bg-gradient-to-r from-purple-glow/80 to-purple-glow transition-all duration-1000"
+                    style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Metric Item 3 -->
+              <div>
+                <div class="flex justify-between items-center text-[10px] mb-1 font-medium">
+                  <span class="text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><span
+                      class="w-1.5 h-1.5 rounded-full bg-amber-glow"></span>Complexity Rating</span>
+                  <span id="complex-val" class="font-mono text-amber-600 dark:text-amber-400 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-slate-800/60 rounded-full h-1.5 overflow-hidden">
+                  <div id="complex-bar"
+                    class="h-full bg-gradient-to-r from-amber-glow/80 to-amber-glow transition-all duration-1000"
+                    style="width: 0%"></div>
+                </div>
+              </div>
+
+              <!-- Metric Item 4 -->
+              <div>
+                <div class="flex justify-between items-center text-[10px] mb-1 font-medium">
+                  <span class="text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><span
+                      class="w-1.5 h-1.5 rounded-full bg-rose-glow"></span>Security Audit</span>
+                  <span id="security-val" class="font-mono text-rose-600 dark:text-rose-400 font-bold">0%</span>
+                </div>
+                <div class="w-full bg-slate-800/60 rounded-full h-1.5 overflow-hidden">
+                  <div id="security-bar"
+                    class="h-full bg-gradient-to-r from-rose-glow/80 to-rose-glow transition-all duration-1000"
+                    style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       CORE FEATURES
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <section class="relative z-10 py-20 bg-space-light/25">
+    <div class="container mx-auto px-4 md:px-8">
+
+      <!-- Header -->
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <h2 class="text-2xl md:text-3xl font-bold font-display text-slate-900 dark:text-white">Full-Spectrum Analysis
+          Engine</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mt-3">
+          Ethrix Forge operates a multi-layer scanning algorithm targeting logical, styling, structural, and
+          vulnerability dimensions.
+        </p>
+      </div>
+
+      <!-- Feature Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+
+        <!-- Card 1 -->
+        <div class="glass rounded-xl p-5 hover:translate-y-[-4px] hover:border-neon transition-all duration-300">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center bg-neon/10 border border-neon/20 text-neon mb-4">
+            <i class="fa-solid fa-bug"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Logical Bug Finder</h3>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            Locates critical syntax flaws, divide-by-zero risks, memory issues, index boundary exceptions, and logic
+            paths that fail under edge conditions.
+          </p>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="glass rounded-xl p-5 hover:translate-y-[-4px] hover:border-neon transition-all duration-300">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-glow/10 border border-purple-glow/20 text-purple-600 dark:text-purple-300 mb-4">
+            <i class="fa-solid fa-shield-alt"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Security Risk Scanner</h3>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            Scans for hardcoded credentials, SQL Injection vectors, unescaped XSS outputs, unsafe system commands, and
+            outdated third-party dependencies.
+          </p>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="glass rounded-xl p-5 hover:translate-y-[-4px] hover:border-neon transition-all duration-300">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center bg-amber-glow/10 border border-amber-glow/20 text-amber-600 dark:text-amber-400 mb-4">
+            <i class="fa-solid fa-code-compare"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Refactoring &amp; Optimization</h3>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            Provides complete line-by-line refactored alternatives. Optimizes execution loops, reduces redundant memory
+            buffers, and improves readability.
+          </p>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="glass rounded-xl p-5 hover:translate-y-[-4px] hover:border-neon transition-all duration-300">
+          <div
+            class="w-10 h-10 rounded-lg flex items-center justify-center bg-emerald-glow/10 border border-emerald-glow/20 text-emerald-600 dark:text-emerald-400 mb-4">
+            <i class="fa-solid fa-file-signature"></i>
+          </div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Inline Docstring Generator</h3>
+          <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            Generates standardized, industry-grade inline comments and docstrings matching Google and Sphinx format,
+            along with conventional commit messages.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       SYSTEM ARCHITECTURE STACK
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <section class="relative z-10 py-20 bg-space/65">
+    <div class="container mx-auto px-4 md:px-8">
+
+      <!-- Header -->
+      <div class="text-center max-w-2xl mx-auto mb-16">
+        <h2 class="text-2xl md:text-3xl font-bold font-display text-slate-900 dark:text-white">System Architecture &amp;
+          Integrations</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-sm mt-3">
+          Ethrix Forge uses a single central async Python backend, exposing unified interfaces for multiple developer
+          environments.
+        </p>
+      </div>
+
+      <!-- Tech Stack Columns -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+
+        <!-- FastAPI Server -->
+        <div class="glass rounded-xl p-6 flex flex-col justify-between border-l-4 border-l-neon">
+          <div>
+            <div class="text-xs font-bold text-neon font-mono mb-2 uppercase">Core Server</div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">FastAPI API Server</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Our central API hub hosted locally or on Render. Utilizes the Google GenAI/Groq Llama 3 API for swift code
+              processing. Exposes asynchronous routes for analyze, optimize, and docgen operations.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 mt-6">
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Python</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">FastAPI</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Groq
+              API</span>
+          </div>
+        </div>
+
+        <!-- CLI Client -->
+        <div class="glass rounded-xl p-6 flex flex-col justify-between border-l-4 border-l-purple-glow">
+          <div>
+            <div class="text-xs font-bold text-purple-600 dark:text-purple-300 font-mono mb-2 uppercase">CLI Terminal
+              Client</div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">Terminal Interface</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              A lightweight CLI script using requests to parse and review local workspace files directly in the user
+              shell. Supports pipeline scans and pre-commit automation logic.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 mt-6">
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Python</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">sys+requests</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Git
+              Hooks</span>
+          </div>
+        </div>
+
+        <!-- Extension Client -->
+        <div class="glass rounded-xl p-6 flex flex-col justify-between border-l-4 border-l-amber-glow">
+          <div>
+            <div class="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono mb-2 uppercase">IDE Wrapper
+              Client</div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white mb-3">VS Code Extension</h3>
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Integrates directly into the editor. Select any code snippet, right-click, and select "Ethrix: Analyze" to
+              query the server and view diagnostic notes in a dedicated sidebar webview panel.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 mt-6">
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">TypeScript</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">VS
+              Code API</span>
+            <span
+              class="text-[10px] bg-space border border-neon-border px-2 py-0.5 rounded text-slate-700 dark:text-slate-300 font-mono">Webview</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       FOOTER
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+  <footer class="relative z-10 bg-transparent py-10">
+    <div class="container mx-auto px-4 md:px-8">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-6 h-6 rounded-md flex items-center justify-center bg-neon/15 border border-neon/30 text-neon">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span class="text-sm font-bold font-mono text-slate-900 dark:text-white">Ethrix Forge</span>
+        </div>
+
+        <!-- Center: team details -->
+        <div class="text-xs text-slate-500 font-medium">
+          Built by <span class="text-slate-800 dark:text-slate-300">Team Titans 4</span> for CodeVortex Hackathon
+        </div>
+
+        <!-- Links / Details -->
+        <div class="text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+          &copy; 2026 Ethrix Forge. Prototype for evaluation.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast Message Element -->
+  <div id="copy-toast"
+    class="fixed bottom-6 right-6 bg-slate-950 border border-neon-border/75 text-neon font-semibold text-xs py-3 px-5 rounded-xl backdrop-blur-md shadow-neon opacity-0 translate-y-6 pointer-events-none transition-all duration-300 z-50">
+  </div>
+
+  <!-- Load JS file -->
+  <script src="js/main.js"></script>
+
+  <!-- Floating Background Paths Script (GPU-Accelerated Canvas) -->
+  <script>
+    (function () {
+      const canvas = document.getElementById('paths-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      // Fixed coordinates resolution mapping coordinates precisely from the React component
+      canvas.width = 696;
+      canvas.height = 316;
+
+      const pathList = [];
+
+      function generatePathsForPosition(position) {
+        for (let i = 0; i < 36; i++) {
+          const x1 = -(380 - i * 5 * position);
+          const y1 = -(189 + i * 6);
+          const x2 = -(312 - i * 5 * position);
+          const y2 = 216 - i * 6;
+          const x3 = 152 - i * 5 * position;
+          const y3 = 343 - i * 6;
+          const x4 = 616 - i * 5 * position;
+          const y4 = 470 - i * 6;
+          const x5 = 684 - i * 5 * position;
+          const y5 = 875 - i * 6;
+
+          const width = 0.5 + i * 0.03;
+          const baseOpacity = 0.08 + i * 0.025; // slightly reduced for elegance
+          const duration = 20 + Math.random() * 10;
+          const speed = 700 / (duration * 60); // pixels per frame
+          const offsetStart = Math.random() * 1000;
+
+          pathList.push({
+            x1, y1, x2, y2, x3, y3, x4, y4, x5, y5,
+            width,
+            baseOpacity,
+            speed,
+            offset: offsetStart,
+            pulseSpeed: 0.01 + Math.random() * 0.01,
+            pulseTime: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      generatePathsForPosition(1);
+      generatePathsForPosition(-1);
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Adjust color palette dynamically per-frame depending on light/dark mode
+        const isDark = document.documentElement.classList.contains('dark');
+        const strokeColor = isDark ? [255, 255, 255] : [15, 23, 42];
+
+        for (let i = 0; i < pathList.length; i++) {
+          const p = pathList[i];
+
+          // Increment offset (scrolls the dash pattern across the bezier curves)
+          p.offset = (p.offset + p.speed) % 1200;
+
+          // Animates opacity oscillation (Framer motion opacity: [0.3, 0.6, 0.3])
+          p.pulseTime += p.pulseSpeed;
+          const pulse = 0.45 + Math.sin(p.pulseTime) * 0.15;
+          const opacity = p.baseOpacity * pulse;
+
+          ctx.strokeStyle = `rgba(${strokeColor[0]}, ${strokeColor[1]}, ${strokeColor[2]}, ${opacity})`;
+          ctx.lineWidth = p.width;
+
+          // setLineDash([dashLength, gapLength])
+          ctx.setLineDash([120, 480]);
+          ctx.lineDashOffset = -p.offset;
+
+          // Draw the bezier curve
+          ctx.beginPath();
+          ctx.moveTo(p.x1, p.y1);
+          ctx.bezierCurveTo(p.x1, p.y1, p.x2, p.y2, p.x3, p.y3);
+          ctx.bezierCurveTo(p.x4, p.y4, p.x5, p.y5, p.x5, p.y5);
+          ctx.stroke();
+        }
+
+        requestAnimationFrame(draw);
+      }
+
+      requestAnimationFrame(draw);
+    })();
+  </script>
+
+  <!-- Theme switcher functions -->
+  <script>
+    function applyLightTheme() {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      updateThemeIcon(false);
+    }
+
+    function applyDarkTheme() {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      updateThemeIcon(true);
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (isDark) {
+        applyLightTheme();
+      } else {
+        applyDarkTheme();
+      }
+      const langSelect = document.getElementById('lang-select');
+      if (langSelect && typeof updateLangBadge === 'function') {
+        updateLangBadge(langSelect.value);
+      }
+    }
+
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById('theme-toggle-icon');
+      if (icon) {
+        icon.className = isDark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
+      }
+    }
+
+    // Initialize theme icon on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      updateThemeIcon(isDark);
+    });
+  </script>
+  <!-- Login/Signup Sliding Drawer -->
+  <div id="login-drawer-overlay" onclick="closeLoginPanel()" class="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300"></div>
+  
+  <div id="login-drawer" class="fixed right-0 top-0 bottom-0 z-50 h-full w-full max-w-md bg-slate-900/95 border-l border-white/10 p-6 flex flex-col justify-between shadow-2xl translate-x-full transition-transform duration-300 ease-in-out text-slate-200">
+    <div class="space-y-6 flex-1 flex flex-col justify-start">
+      <!-- Top header row -->
+      <div class="flex items-center justify-between border-b border-white/10 pb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-lock text-neon"></i> Welcome to Ethrix Forge
+        </h3>
+        <button onclick="closeLoginPanel()" class="text-slate-400 hover:text-rose-500 transition-colors">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Tab selection buttons -->
+      <div class="flex rounded-xl bg-white/5 p-1 border border-white/10">
+        <button id="tab-login" onclick="setDrawerTab('login')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-neon text-white transition-all">Login</button>
+        <button id="tab-signup" onclick="setDrawerTab('signup')" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all">Sign Up</button>
+      </div>
+
+      <!-- Dynamic Form Area -->
+      <div id="form-container" class="space-y-4 flex-grow text-slate-700 dark:text-slate-200">
+        <!-- Login Form -->
+        <div id="form-login" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</label>
+            <input id="login-email" type="email" placeholder="you@example.com"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-xs px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-semibold">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Password</label>
+            <input id="login-password" type="password" placeholder="••••••••"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-xs px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-semibold">
+          </div>
+          <button onclick="submitLogin()" class="btn-solid w-full py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer">
+            Login <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="form-signup" class="hidden space-y-4">
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Full Name</label>
+            <input id="signup-name" type="text" placeholder="John Doe"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-xs px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-semibold">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</label>
+            <input id="signup-email" type="email" placeholder="you@example.com"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-xs px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-semibold">
+          </div>
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Password</label>
+            <input id="signup-password" type="password" placeholder="Create a password"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-xs px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-semibold">
+          </div>
+          <button onclick="submitSignup()" class="btn-solid w-full py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer">
+            Create Account <i class="fa-solid fa-user-plus"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Login / Signup Drawer Controls ───────────
+    function openLoginPanel() {
+      const overlay = document.getElementById('login-drawer-overlay');
+      const drawer = document.getElementById('login-drawer');
+      if (overlay && drawer) {
+        overlay.classList.remove('pointer-events-none');
+        overlay.classList.add('opacity-100');
+        drawer.classList.remove('translate-x-full');
+        drawer.classList.add('translate-x-0');
+      }
+    }
+
+    function closeLoginPanel() {
+      const overlay = document.getElementById('login-drawer-overlay');
+      const drawer = document.getElementById('login-drawer');
+      if (overlay && drawer) {
+        overlay.classList.add('pointer-events-none');
+        overlay.classList.remove('opacity-100');
+        drawer.classList.add('translate-x-full');
+        drawer.classList.remove('translate-x-0');
+      }
+    }
+
+    function setDrawerTab(tab) {
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      const formLogin = document.getElementById('form-login');
+      const formSignup = document.getElementById('form-signup');
+      
+      if (tab === 'login') {
+        tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-neon text-white transition-all cursor-pointer";
+        tabSignup.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer";
+        formLogin.classList.remove('hidden');
+        formSignup.classList.add('hidden');
+      } else {
+        tabSignup.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-neon text-white transition-all cursor-pointer";
+        tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer";
+        formSignup.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+      }
+    }
+
+    function submitLogin() {
+      const email = document.getElementById('login-email')?.value.trim();
+      const pass = document.getElementById('login-password')?.value;
+      if (!email || !pass) {
+        alert('Please fill out all fields!');
+        return;
+      }
+      
+      const prefix = email.split('@')[0];
+      const displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+      localStorage.setItem('profile_name', displayName || 'Developer Account');
+      
+      window.location.href = "../dashboard/index.html";
+    }
+
+    function submitSignup() {
+      const name = document.getElementById('signup-name')?.value.trim();
+      const email = document.getElementById('signup-email')?.value.trim();
+      const pass = document.getElementById('signup-password')?.value;
+      
+      if (!name || !email || !pass) {
+        alert('Please fill out all fields!');
+        return;
+      }
+      
+      localStorage.setItem('profile_name', name);
+      window.location.href = "../dashboard/index.html";
+    }
+
+    function handleOpenDashboard(e) {
+      if (e) e.preventDefault();
+      const isLoggedIn = localStorage.getItem('profile_name');
+      if (isLoggedIn) {
+        window.location.href = "../dashboard/index.html";
+      } else {
+        openLoginPanel();
+      }
+    }
+  </script>
+</body>
+
+</html>

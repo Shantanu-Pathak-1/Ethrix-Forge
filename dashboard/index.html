@@ -1,0 +1,2647 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      const theme = localStorage.getItem('theme') || 'dark';
+      if (theme === 'dark') document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+      
+      // Auth Guard: Redirect to landing page if not logged in
+      if (!localStorage.getItem('profile_name')) {
+        window.location.replace('../ethrix-landing/index.html');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EthrixForge — Developer Dashboard</title>
+  <meta name="description"
+    content="EthrixForge Developer Dashboard — AI-powered code review, diagnostics, and documentation generation." />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="../ethrix-landing/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'space': 'rgb(var(--background-rgb))',
+            'space-light': 'rgb(var(--muted-rgb))',
+            'space-card': 'rgb(var(--card-rgb))',
+            'neon': 'rgb(var(--primary-rgb))',
+            'neon-dim': 'rgb(var(--ring-rgb))',
+            'neon-border': 'rgb(var(--border-rgb))',
+            'purple-glow': 'rgb(var(--chart-3-rgb))',
+            'amber-glow': 'rgb(var(--chart-4-rgb))',
+            'rose-glow': 'rgb(var(--destructive-rgb))',
+            'emerald-glow': 'rgb(var(--chart-2-rgb))',
+            foreground: 'rgb(var(--foreground-rgb))',
+            primary: 'rgb(var(--primary-rgb))',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          animation: {
+            'pulse-neon': 'pulseNeon 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'fade-in': 'fadeIn 0.4s ease-out',
+            'slide-up': 'slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+          },
+          keyframes: {
+            pulseNeon: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.65' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(16px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    /* ─── Light Theme Variables ─────────────────────── */
+    :root {
+      --background: #f0f4ff;
+      --card: rgba(255, 255, 255, 0.88);
+      --border: rgba(148, 163, 184, 0.22);
+      --muted: rgba(241, 245, 249, 0.95);
+      --accent: rgba(237, 233, 254, 0.92);
+      --ring: #6d4fad;
+      --foreground: #0f172a;
+      --primary: #6d28d9;
+      --primary-foreground: #ffffff;
+      --muted-foreground: #475569;
+      --sidebar: rgba(255, 255, 255, 0.82);
+      --sidebar-border: rgba(148, 163, 184, 0.2);
+      --sidebar-primary: rgba(237, 233, 254, 0.9);
+      --sidebar-primary-foreground: #4c1d95;
+      --sidebar-foreground: #0f172a;
+      --sidebar-accent: rgba(237, 233, 254, 0.6);
+      --radius: 14px;
+      --destructive: #dc2626;
+      --chart-3: #7c3aed;
+
+      --background-rgb: 240, 244, 255;
+      --foreground-rgb: 15, 23, 42;
+      --card-rgb: 255, 255, 255;
+      --border-rgb: 148, 163, 184;
+      --primary-rgb: 109, 40, 217;
+      --muted-rgb: 241, 245, 249;
+      --ring-rgb: 109, 79, 173;
+      --chart-2-rgb: 20, 184, 166;
+      --chart-3-rgb: 124, 58, 237;
+      --chart-4-rgb: 245, 158, 11;
+      --destructive-rgb: 220, 38, 38;
+    }
+
+    /* ─── Dark Theme Variables ──────────────────────── */
+    .dark {
+      --background: #060d1a;
+      --card: rgba(10, 18, 36, 0.85);
+      --border: rgba(148, 163, 184, 0.14);
+      --muted: rgba(10, 18, 36, 0.9);
+      --accent: rgba(30, 41, 59, 0.88);
+      --ring: #a78bfa;
+      --foreground: #f1f5f9;
+      --primary: #8b5cf6;
+      --primary-foreground: #ffffff;
+      --muted-foreground: #94a3b8;
+      --sidebar: rgba(7, 12, 26, 0.96);
+      --sidebar-border: rgba(148, 163, 184, 0.12);
+      --sidebar-primary: rgba(59, 130, 246, 0.18);
+      --sidebar-primary-foreground: #e0e7ff;
+      --sidebar-foreground: #e2e8f0;
+      --sidebar-accent: rgba(30, 41, 59, 0.9);
+      --radius: 14px;
+      --destructive: #f87171;
+      --chart-3: #c084fc;
+
+      --background-rgb: 6, 13, 26;
+      --foreground-rgb: 241, 245, 249;
+      --card-rgb: 10, 18, 36;
+      --border-rgb: 51, 65, 85;
+      --primary-rgb: 139, 92, 246;
+      --muted-rgb: 10, 18, 36;
+      --ring-rgb: 167, 139, 250;
+      --chart-2-rgb: 52, 211, 153;
+      --chart-3-rgb: 192, 132, 252;
+      --chart-4-rgb: 251, 191, 36;
+      --destructive-rgb: 248, 113, 113;
+    }
+
+    /* ─── Base ──────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--background);
+      color: var(--foreground);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      transition: background-color 0.35s, color 0.35s;
+      height: 100vh;
+    }
+
+    /* ─── Ambient Backdrop ──────────────────────────── */
+    #ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.55;
+      transition: opacity 0.4s;
+      animation: blobDrift 18s ease-in-out infinite;
+    }
+
+    .dark .blob {
+      opacity: 0.28;
+    }
+
+    .blob-1 {
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(109, 40, 217, 0.6), transparent 70%);
+      top: -160px;
+      left: -120px;
+      animation-duration: 22s;
+    }
+
+    .blob-2 {
+      width: 440px;
+      height: 440px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.5), transparent 70%);
+      top: 30%;
+      right: -140px;
+      animation-duration: 18s;
+      animation-delay: -6s;
+    }
+
+    .blob-3 {
+      width: 380px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(20, 184, 166, 0.45), transparent 70%);
+      bottom: -120px;
+      left: 15%;
+      animation-duration: 25s;
+      animation-delay: -12s;
+    }
+
+    @keyframes blobDrift {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      33% {
+        transform: translate(28px, -44px) scale(1.04);
+      }
+
+      66% {
+        transform: translate(-20px, 18px) scale(0.97);
+      }
+    }
+
+    /* ─── Scrollbar ─────────────────────────────────── */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--ring);
+    }
+
+    /* ─── Glass Surface ─────────────────────────────── */
+    .glass {
+      background: var(--card);
+      backdrop-filter: blur(24px) saturate(160%);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid var(--border);
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+    }
+
+    .glass-hover:hover {
+      border-color: rgba(var(--primary-rgb), 0.35);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(var(--primary-rgb), 0.12);
+      transform: translateY(-2px);
+    }
+
+    /* ─── Sidebar ─────────────────────────────────────
+       Collapsed = 64px icon rail | Hover = 240px full
+    ─────────────────────────────────────────────────── */
+    #sidebar {
+      --sb-collapsed: 64px;
+      --sb-expanded: 240px;
+      width: var(--sb-collapsed);
+      background: var(--sidebar);
+      border-right: 1px solid var(--sidebar-border);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 2px 0 24px rgba(0, 0, 0, 0.06);
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.35s;
+      z-index: 40;
+      position: relative;
+    }
+
+    /* Hide scrollbar for sidebar nav */
+    #sidebar nav {
+      -ms-overflow-style: none;
+      /* IE and Edge */
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    #sidebar nav::-webkit-scrollbar {
+      display: none;
+      /* Chrome, Safari, Opera */
+    }
+
+    /* Expand width on desktop hover */
+    @media (min-width: 768px) {
+      #sidebar:hover {
+        width: var(--sb-expanded);
+      }
+
+      /* Center icons when rail is collapsed */
+      #sidebar:not(:hover) .nav-item {
+        justify-content: center;
+        padding: 10px 0;
+        gap: 0 !important;
+      }
+
+      /* Section labels (Workspace / Config) — fully remove in collapsed state
+         so their mt-4 margin doesn't create a ghost bar/gap */
+      #sidebar:not(:hover) .sb-section-label {
+        display: none;
+      }
+
+      /* User row + theme/landing buttons — same centered icon as nav items */
+      #sidebar:not(:hover) #sb-user-row {
+        justify-content: center;
+        padding: 10px 0;
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+      }
+
+      /* Hide the user dot gap in collapsed (dot already hidden via max-width) */
+      #sidebar:not(:hover) #sb-user-row .sb-user-dot {
+        display: none;
+      }
+
+      /* ── Collapsed active: remove box, only glow the icon ── */
+      #sidebar:not(:hover) .nav-item.active {
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+      }
+
+      /* Make the icon itself clearly show "active" */
+      #sidebar:not(:hover) .nav-item.active .nav-icon {
+        background: rgba(var(--primary-rgb), 0.18);
+        color: var(--primary);
+        box-shadow: 0 0 0 1.5px rgba(var(--primary-rgb), 0.35),
+          0 4px 12px rgba(var(--primary-rgb), 0.22);
+      }
+
+      /* Show labels when expanded */
+      #sidebar:hover .sb-label {
+        max-width: 180px;
+        opacity: 1;
+      }
+
+      #sidebar:hover .sb-brand-text {
+        max-width: 180px;
+        opacity: 1;
+      }
+
+      #sidebar:hover .sb-user-text {
+        max-width: 160px;
+        opacity: 1;
+      }
+
+      #sidebar:hover .sb-section-label {
+        max-height: 28px;
+        opacity: 1;
+      }
+
+      /* Hide the tiny status dot when text is visible */
+      #sidebar:hover .sb-user-dot {
+        max-width: 0;
+        opacity: 0;
+      }
+
+      /* Tooltip only visible in collapsed state */
+      #sidebar:not(:hover) .nav-item:hover .nav-tooltip {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* Mobile — slide in via .open class */
+    @media (max-width: 767px) {
+      #sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sb-expanded) !important;
+        transform: translateX(-100%);
+      }
+
+      #sidebar.open {
+        transform: translateX(0);
+        box-shadow: 6px 0 40px rgba(0, 0, 0, 0.3);
+      }
+
+      #sidebar .sb-label {
+        max-width: 180px !important;
+        opacity: 1 !important;
+      }
+
+      #sidebar .sb-brand-text {
+        max-width: 180px !important;
+        opacity: 1 !important;
+      }
+
+      #sidebar .sb-user-text {
+        max-width: 160px !important;
+        opacity: 1 !important;
+      }
+
+      #sidebar .sb-section-label {
+        max-height: 28px !important;
+        opacity: 1 !important;
+      }
+
+      #sidebar .sb-user-dot {
+        max-width: 0 !important;
+        opacity: 0 !important;
+      }
+
+      #sidebar .nav-item {
+        justify-content: flex-start !important;
+        padding: 10px 14px !important;
+      }
+    }
+
+    /* ─── Sidebar label elements ──────────────────────
+       All use max-width/max-height:0 so they occupy
+       ZERO space when collapsed (not just invisible).
+    ─────────────────────────────────────────────────── */
+    .sb-label {
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.04s,
+        opacity 0.22s ease 0.06s;
+    }
+
+    .sb-brand-text {
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.03s,
+        opacity 0.22s ease 0.05s;
+    }
+
+    .sb-user-text {
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.04s,
+        opacity 0.2s ease 0.05s;
+    }
+
+    .sb-section-label {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      white-space: nowrap;
+      transition: max-height 0.25s ease 0.03s, opacity 0.2s ease 0.04s;
+    }
+
+    .sb-user-dot {
+      flex-shrink: 0;
+      max-width: 8px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      overflow: hidden;
+      transition: max-width 0.2s ease, opacity 0.2s ease;
+    }
+
+    /* ─── Nav Items ─────────────────────────────────── */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s,
+        padding 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .nav-item:hover {
+      color: var(--sidebar-foreground);
+      background: var(--sidebar-accent);
+      border-color: var(--sidebar-border);
+    }
+
+    .nav-item.active {
+      color: var(--sidebar-primary-foreground);
+      background: var(--sidebar-primary);
+      border-color: rgba(var(--primary-rgb), 0.3);
+      box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.14);
+    }
+
+    .nav-item .nav-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      transition: background 0.2s, color 0.2s;
+      background: rgba(var(--primary-rgb), 0.06);
+    }
+
+    .nav-item.active .nav-icon {
+      background: rgba(var(--primary-rgb), 0.15);
+      color: var(--primary);
+    }
+
+    /* Tooltip — appears to the right of icon in collapsed state */
+    .nav-item .nav-tooltip {
+      position: absolute;
+      left: calc(var(--sb-collapsed) + 10px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 8px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: opacity 0.18s, transform 0.18s;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+      z-index: 200;
+    }
+
+
+
+    /* ─── Buttons ───────────────────────────────────── */
+    .btn-ghost {
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      background: transparent;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-ghost:hover {
+      background: var(--accent);
+      border-color: rgba(var(--primary-rgb), 0.3);
+      transform: translateY(-1px);
+    }
+
+    html:not(.dark) .btn-ghost {
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgba(79, 70, 229, 0.95));
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.28);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 12px 30px rgba(var(--primary-rgb), 0.38);
+      transform: translateY(-2px) scale(1.01);
+    }
+
+    .btn-rose {
+      background: rgba(var(--destructive-rgb), 0.08);
+      border: 1px solid rgba(var(--destructive-rgb), 0.22);
+      color: var(--destructive);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-rose:hover {
+      background: rgba(var(--destructive-rgb), 0.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-purple {
+      background: rgba(var(--chart-3-rgb), 0.1);
+      border: 1px solid rgba(var(--chart-3-rgb), 0.28);
+      color: var(--chart-3);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn-purple:hover {
+      background: rgba(var(--chart-3-rgb), 0.18);
+      transform: translateY(-1px);
+    }
+
+    /* ─── IDE / Code Editor ─────────────────────────── */
+    .ide-wrap {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--card);
+      height: 500px;
+    }
+
+    .ide-titlebar {
+      background: rgba(var(--muted-rgb), 0.9);
+      border-bottom: 1px solid var(--border);
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ide-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .ide-editor-row {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .ide-gutter {
+      width: 42px;
+      background: rgba(var(--muted-rgb), 0.6);
+      border-right: 1px solid var(--border);
+      padding: 12px 0;
+      user-select: none;
+      overflow: hidden;
+      text-align: right;
+      height: 100%;
+    }
+
+    .ide-gutter .ln {
+      display: block;
+      padding-right: 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-foreground);
+      line-height: 20px;
+      opacity: 0.5;
+    }
+
+    .ide-gutter .ln.active-ln {
+      color: var(--primary);
+      opacity: 1;
+      font-weight: 700;
+    }
+
+    .ide-textarea {
+      flex: 1;
+      resize: none;
+      background: transparent;
+      color: var(--foreground);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 20px;
+      padding: 12px 14px;
+      border: none;
+      outline: none;
+      tab-size: 2;
+      height: 100%;
+      overflow-y: auto;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    .ide-statusbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 14px;
+      border-top: 1px solid var(--border);
+      background: rgba(var(--muted-rgb), 0.6);
+      font-size: 10.5px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-foreground);
+    }
+
+    /* ─── Drop Zone ─────────────────────────────────── */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      background: rgba(var(--muted-rgb), 0.5);
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropzone:hover,
+    .dropzone.drag-over {
+      border-color: rgba(var(--primary-rgb), 0.5);
+      background: rgba(var(--primary-rgb), 0.04);
+    }
+
+    .dropzone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      background: radial-gradient(circle at center, rgba(var(--primary-rgb), 0.06), transparent 70%);
+      transition: opacity 0.25s;
+    }
+
+    .dropzone:hover::before {
+      opacity: 1;
+    }
+
+    /* ─── Output Panel ──────────────────────────────── */
+    .output-panel {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--card);
+      min-height: 460px;
+    }
+
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(var(--muted-rgb), 0.6);
+      flex-shrink: 0;
+    }
+
+    .output-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+    }
+
+    .output-footer {
+      border-top: 1px solid var(--border);
+      padding: 8px 16px;
+      background: rgba(var(--muted-rgb), 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ─── Markdown Styles ───────────────────────────── */
+    .md-content h1 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .md-content h2 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--foreground);
+      margin: 18px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .md-content h2::before {
+      content: '##';
+      font-size: 9px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted-foreground);
+      opacity: 0.6;
+    }
+
+    .md-content h3 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--chart-3);
+      margin: 12px 0 6px;
+    }
+
+    .md-content p {
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+      line-height: 1.65;
+      margin-bottom: 8px;
+    }
+
+    .md-content ul {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 10px;
+    }
+
+    .md-content ul li {
+      font-size: 0.8rem;
+      color: var(--muted-foreground);
+      line-height: 1.55;
+      padding: 3px 0 3px 18px;
+      position: relative;
+    }
+
+    .md-content ul li::before {
+      content: '›';
+      position: absolute;
+      left: 5px;
+      color: var(--primary);
+      font-weight: 800;
+    }
+
+    .md-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      background: rgba(var(--primary-rgb), 0.07);
+      color: var(--primary);
+      padding: 1px 5px;
+      border-radius: 5px;
+      border: 1px solid rgba(var(--primary-rgb), 0.15);
+    }
+
+    .md-content pre {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+    }
+
+    .md-content pre code {
+      background: transparent;
+      border: none;
+      padding: 0;
+      color: var(--foreground);
+      font-size: 11px;
+    }
+
+    .md-content blockquote {
+      border-left: 3px solid var(--primary);
+      padding: 6px 14px;
+      margin: 10px 0;
+      background: rgba(var(--primary-rgb), 0.05);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .md-content blockquote p {
+      margin: 0;
+      color: var(--foreground);
+      opacity: 0.85;
+    }
+
+    .md-content strong {
+      color: var(--foreground);
+      font-weight: 700;
+    }
+
+    .md-content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+
+    /* ─── Badges ────────────────────────────────────── */
+    .badge-critical {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(var(--destructive-rgb), 0.1);
+      color: var(--destructive);
+      border: 1px solid rgba(var(--destructive-rgb), 0.22);
+    }
+
+    .badge-warn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.22);
+    }
+
+    .badge-ok {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.22);
+    }
+
+    .badge-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 9px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: rgba(var(--primary-rgb), 0.08);
+      color: var(--primary);
+      border: 1px solid rgba(var(--primary-rgb), 0.2);
+    }
+
+    /* ─── Honeycomb Loader ──────────────────────────── */
+    @-webkit-keyframes honeycomb {
+      0%,
+      20%,
+      80%,
+      100% {
+        opacity: 0;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      30%,
+      70% {
+        opacity: 1;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+    }
+
+    @keyframes honeycomb {
+      0%,
+      20%,
+      80%,
+      100% {
+        opacity: 0;
+        -webkit-transform: scale(0);
+        transform: scale(0);
+      }
+
+      30%,
+      70% {
+        opacity: 1;
+        -webkit-transform: scale(1);
+        transform: scale(1);
+      }
+    }
+
+    .honeycomb {
+      height: 24px;
+      position: relative;
+      width: 24px;
+    }
+
+    .honeycomb div {
+      -webkit-animation: honeycomb 2.1s infinite backwards;
+      animation: honeycomb 2.1s infinite backwards;
+      background: var(--primary);
+      height: 12px;
+      margin-top: 6px;
+      position: absolute;
+      width: 24px;
+    }
+
+    .honeycomb div:after, .honeycomb div:before {
+      content: '';
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      position: absolute;
+      left: 0;
+      right: 0;
+    }
+
+    .honeycomb div:after {
+      top: -6px;
+      border-bottom: 6px solid var(--primary);
+    }
+
+    .honeycomb div:before {
+      bottom: -6px;
+      border-top: 6px solid var(--primary);
+    }
+
+    .honeycomb div:nth-child(1) {
+      -webkit-animation-delay: 0s;
+      animation-delay: 0s;
+      left: -28px;
+      top: 0;
+    }
+
+    .honeycomb div:nth-child(2) {
+      -webkit-animation-delay: 0.1s;
+      animation-delay: 0.1s;
+      left: -14px;
+      top: 22px;
+    }
+
+    .honeycomb div:nth-child(3) {
+      -webkit-animation-delay: 0.2s;
+      animation-delay: 0.2s;
+      left: 14px;
+      top: 22px;
+    }
+
+    .honeycomb div:nth-child(4) {
+      -webkit-animation-delay: 0.3s;
+      animation-delay: 0.3s;
+      left: 28px;
+      top: 0;
+    }
+
+    .honeycomb div:nth-child(5) {
+      -webkit-animation-delay: 0.4s;
+      animation-delay: 0.4s;
+      left: 14px;
+      top: -22px;
+    }
+
+    .honeycomb div:nth-child(6) {
+      -webkit-animation-delay: 0.5s;
+      animation-delay: 0.5s;
+      left: -14px;
+      top: -22px;
+    }
+
+    .honeycomb div:nth-child(7) {
+      -webkit-animation-delay: 0.6s;
+      animation-delay: 0.6s;
+      left: 0;
+      top: 0;
+    }
+
+    /* ─── Chat ──────────────────────────────────────── */
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .msg {
+      max-width: 82%;
+      padding: 11px 15px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .msg-user {
+      background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgba(79, 70, 229, 0.95));
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      align-self: flex-end;
+      font-weight: 500;
+      box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.22);
+    }
+
+    .msg-model {
+      background: var(--muted);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      border-radius: 18px 18px 18px 4px;
+      align-self: flex-start;
+    }
+
+    .msg-time {
+      font-size: 9.5px;
+      color: var(--muted-foreground);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .chat-input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      background: rgba(var(--muted-rgb), 0.6);
+    }
+
+    .chat-inp {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      color: var(--foreground);
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      max-height: 120px;
+    }
+
+    .chat-send {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(var(--primary-rgb), 0.1);
+      color: var(--primary);
+      border: 1px solid rgba(var(--primary-rgb), 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .chat-send:hover:not(:disabled) {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.32);
+    }
+
+    .typing-ind {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 14px;
+      border-radius: 18px 18px 18px 4px;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      align-self: flex-start;
+    }
+
+    .typing-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--muted-foreground);
+      animation: typingBounce 1.4s ease-in-out infinite;
+    }
+
+    @keyframes typingBounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+        opacity: 0.35;
+      }
+
+      50% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    /* ─── Progress ──────────────────────────────────── */
+    .progress-bar-bg {
+      height: 5px;
+      background: rgba(var(--border-rgb), 0.5);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ─── Metrics Card ──────────────────────────────── */
+    .metric-card {
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ─── View Transitions ──────────────────────────── */
+    .view-pane {
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ─── Tab Buttons ───────────────────────────────── */
+    .tab-btn {
+      padding: 5px 12px;
+      border-radius: 7px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+
+    .tab-btn.active {
+      background: rgba(var(--primary-rgb), 0.12);
+      color: var(--primary);
+      border-color: rgba(var(--primary-rgb), 0.24);
+    }
+
+    .tab-btn:not(.active) {
+      color: var(--muted-foreground);
+    }
+
+    .tab-btn:not(.active):hover {
+      color: var(--foreground);
+    }
+
+    /* ─── Code Block in Integrations ───────────────── */
+    .code-block {
+      background: rgba(var(--muted-rgb), 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.7;
+    }
+
+    .code-comment {
+      color: var(--muted-foreground);
+      opacity: 0.65;
+    }
+
+    .code-cmd {
+      color: var(--foreground);
+    }
+
+    /* ─── Mobile Sidebar Overlay ────────────────────── */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 30;
+    }
+
+    #sidebar-overlay.visible {
+      display: block;
+    }
+
+    /* ─── Lang Badge ────────────────────────────────── */
+    .lang-badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── Status Pill ───────────────────────────────── */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body class="relative min-h-screen font-sans selection:bg-violet-500/20 selection:text-violet-600">
+
+  <!-- Ambient Background -->
+  <div id="ambient">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ════════════════════════════════════════════
+       ROOT LAYOUT
+  ════════════════════════════════════════════ -->
+  <div class="relative z-10 flex h-screen overflow-hidden" id="root-layout">
+
+    <!-- ══════════════════════════════
+         SIDEBAR
+    ══════════════════════════════ -->
+    <aside id="sidebar" class="flex-shrink-0 h-full">
+
+      <!-- Brand -->
+      <div class="flex items-center gap-3 border-b border-[var(--sidebar-border)] flex-shrink-0"
+        style="padding: 16px; min-height: 65px;">
+        <a href="../ethrix-landing/index.html"
+          class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-neon"
+          style="background: linear-gradient(135deg, #7c3aed, #3b82f6); box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);">
+          <i class="fa-solid fa-bolt text-white text-sm"></i>
+        </a>
+        <div class="sb-brand-text flex flex-col">
+          <span
+            class="text-sm font-extrabold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400 bg-clip-text text-transparent">Ethrix
+            Forge</span>
+          <span class="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Dashboard</span>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 px-2 py-4 space-y-1.5 overflow-y-auto">
+        <p
+          class="sb-section-label text-[10px] font-bold text-slate-400 dark:text-slate-500 px-3 uppercase tracking-wider mb-2">
+          Workspace</p>
+
+        <div id="nav-studio" onclick="switchTab('studio')" class="nav-item active" title="Code Analyzer">
+          <div class="nav-icon">
+            <i class="fa-solid fa-code text-[13px]"></i>
+          </div>
+          <span class="sb-label text-xs font-semibold">Code Analyzer</span>
+          <span class="nav-tooltip">Code Analyzer</span>
+        </div>
+
+        <div id="nav-chat" onclick="switchTab('chat')" class="nav-item" title="Forge AI Chat">
+          <div class="nav-icon">
+            <i class="fa-solid fa-message text-[13px]"></i>
+          </div>
+          <span class="sb-label text-xs font-semibold">Ethrix AI Chat</span>
+          <span class="nav-tooltip">Ethrix AI Chat</span>
+        </div>
+
+        <p
+          class="sb-section-label text-[10px] font-bold text-slate-400 dark:text-slate-500 px-3 uppercase tracking-wider mt-4 mb-2">
+          Config</p>
+
+        <div id="nav-integrations" onclick="switchTab('integrations')" class="nav-item" title="Integrations">
+          <div class="nav-icon">
+            <i class="fa-solid fa-plug text-[13px]"></i>
+          </div>
+          <span class="sb-label text-xs font-semibold">Integrations</span>
+          <span class="nav-tooltip">Integrations & Setup</span>
+        </div>
+      </nav>
+
+      <!-- ── Bottom Controls + User Card ───────────────── -->
+      <div class="flex-shrink-0" style="padding: 8px;">
+
+        <!-- Theme toggle -->
+        <button id="theme-toggle" onclick="toggleDarkMode()" class="nav-item w-full" title="Toggle Theme">
+          <div class="nav-icon">
+            <i id="theme-toggle-icon" class="fa-solid fa-sun text-[13px]"></i>
+          </div>
+          <span class="sb-label text-xs font-semibold">Toggle Theme</span>
+          <span class="nav-tooltip">Toggle Theme</span>
+        </button>
+
+        <!-- Landing Page -->
+        <a href="../ethrix-landing/index.html" class="nav-item w-full" style="text-decoration:none;"
+          title="Landing Page">
+          <div class="nav-icon">
+            <i class="fa-solid fa-house text-[13px]"></i>
+          </div>
+          <span class="sb-label text-xs font-semibold">Landing Page</span>
+          <span class="nav-tooltip">Go to Landing</span>
+        </a>
+
+        <!-- User row (same layout as nav-item for alignment) -->
+        <div id="sb-user-row" onclick="openProfileModal()" class="nav-item w-full" style="cursor:pointer; margin-top:4px;" title="Profile Settings">
+          <div class="nav-icon relative overflow-hidden flex items-center justify-center"
+            style="background: linear-gradient(135deg,rgba(124,58,237,0.15),rgba(59,130,246,0.15)); border:1px solid rgba(124,58,237,0.25);">
+            <img id="sb-user-img" class="hidden w-full h-full object-cover" src="">
+            <span id="sb-user-initials" class="text-[9px] font-bold"
+              style="background:linear-gradient(135deg,#7c3aed,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">TT</span>
+            <span
+              class="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[var(--sidebar)]"></span>
+          </div>
+          <div class="sb-user-text">
+            <p id="sb-user-name" class="text-[11px] font-bold text-slate-900 dark:text-white truncate leading-tight">Team Titans 4</p>
+            <p class="text-[9px] text-slate-500 truncate font-mono">CodeVortex 2026</p>
+          </div>
+          <div class="sb-user-dot w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- ══════════════════════════════
+         MAIN CONTENT AREA
+    ══════════════════════════════ -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+      <!-- MAIN SCROLL AREA (no topbar) -->
+      <main class="flex-1 overflow-hidden px-5 py-5 flex flex-col min-h-0">
+
+        <!-- ╔═══════════════════════════════════════╗
+             ║ VIEW 1: CODE ANALYZER                ║
+             ╚═══════════════════════════════════════╝ -->
+        <section id="view-studio" class="view-pane flex-1 min-h-0 flex flex-col gap-4 animate-fade-in">
+
+          <!-- Title Row -->
+          <div class="flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
+            <div>
+              <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white tracking-tight">Code Analyzer
+              </h1>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Paste your code · Run diagnostics ·
+                Get AI-powered insights instantly.</p>
+            </div>
+            <!-- Feature Pills -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-violet-500/10 border border-violet-500/22 text-violet-600 dark:text-violet-300">
+                <span class="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse"></span> Live Diagnostics
+              </span>
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/22 text-emerald-700 dark:text-emerald-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Smart Refactor
+              </span>
+              <span
+                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 border border-amber-500/22 text-amber-700 dark:text-amber-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Doc Generation
+              </span>
+            </div>
+          </div>
+
+          <!-- Studio Grid -->
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 flex-1 min-h-0">
+
+            <!-- LEFT: Code Input (7 cols) -->
+            <div class="xl:col-span-7 flex flex-col gap-4 h-full min-h-0">
+              <div class="glass rounded-2xl p-4 flex flex-col gap-3 flex-1 min-h-0"
+                style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+
+                <!-- Editor Titlebar -->
+                <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5 flex-shrink-0">
+                  <div class="flex items-center gap-2">
+                    <div class="flex gap-1.5">
+                      <span class="ide-dot bg-rose-400"></span>
+                      <span class="ide-dot bg-amber-400"></span>
+                      <span class="ide-dot bg-emerald-400"></span>
+                    </div>
+                    <span class="text-xs font-mono text-slate-400 ml-1">source_editor.py</span>
+                    <!-- File chip -->
+                    <span id="file-chip"
+                      class="hidden items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/22 text-emerald-700 dark:text-emerald-400 text-[10px] font-mono">
+                      <span id="file-name-label">file.py</span>
+                      <button onclick="clearFile(event)"
+                        class="text-slate-400 hover:text-rose-400 transition-colors ml-0.5">
+                        <i class="fa-solid fa-xmark text-[9px]"></i>
+                      </button>
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span id="lang-badge-display" class="lang-badge">PY</span>
+                    <select id="lang-select"
+                      class="bg-transparent border border-[var(--border)] text-slate-600 dark:text-slate-300 text-xs px-2 py-1 rounded-lg outline-none focus:border-violet-500 transition-colors font-mono cursor-pointer">
+                      <option value="python">Python</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="typescript">TypeScript</option>
+                      <option value="rust">Rust</option>
+                      <option value="go">Go</option>
+                      <option value="cpp">C++</option>
+                      <option value="yaml">YAML</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Drop Zone -->
+                <div id="drop-zone"
+                  class="dropzone p-3 flex flex-col items-center justify-center gap-1.5 text-center flex-shrink-0"
+                  onclick="document.getElementById('file-input').click()">
+                  <input type="file" id="file-input" class="hidden" onchange="handleFileSelect(event)">
+                  <div
+                    class="w-7 h-7 rounded-xl flex items-center justify-center bg-violet-500/10 border border-violet-500/22 text-violet-500">
+                    <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                  </div>
+                  <div>
+                    <p id="drop-label" class="text-[11px] text-slate-700 dark:text-slate-300 font-semibold">Drop file
+                      here or <span class="text-violet-500">browse</span></p>
+                    <p id="drop-sub" class="text-[9px] text-slate-400 font-mono mt-0.5">.py · .js · .ts · .rs · .go ·
+                      .cpp · .yaml · .json</p>
+                  </div>
+                </div>
+
+                <!-- IDE Editor -->
+                <div class="ide-wrap flex-1 min-h-0">
+                  <div class="ide-editor-row">
+                    <div id="ide-gutter" class="ide-gutter"></div>
+                    <textarea id="code-input" class="ide-textarea" placeholder="# Paste your code here..."
+                      oninput="renderLineNumbers()"
+                      onscroll="document.getElementById('ide-gutter').scrollTop = this.scrollTop"></textarea>
+                  </div>
+                  <div class="ide-statusbar">
+                    <span id="cursor-pos">Ln 1, Col 1</span>
+                    <span id="char-count">0 chars</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex gap-3 flex-shrink-0">
+                <button id="btn-analyze" onclick="runAction('analyze')" class="btn-primary flex-1">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <span id="analyze-label">Analyze Code</span>
+                </button>
+                <button id="btn-fix" onclick="runAction('fix')" class="btn-purple flex-1">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Fix & Refactor
+                </button>
+                <button id="btn-docgen" onclick="runAction('docgen')" class="btn-ghost flex-1">
+                  <i class="fa-solid fa-file-code text-violet-500"></i> Generate Docs
+                </button>
+                <button onclick="clearEditor()" class="btn-rose px-4" title="Clear Editor">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- RIGHT: Diagnostics Output (5 cols) -->
+            <div class="xl:col-span-5 flex flex-col gap-4 h-full min-h-0">
+              <div class="output-panel flex-1 min-h-0" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+
+                <!-- Output Header -->
+                <div class="output-header">
+                  <div class="flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-slate-400">
+                    <span id="output-status-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                    <span id="output-meta">No report yet</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button id="tab-rendered" onclick="setOutputTab('rendered')" class="tab-btn active">Report</button>
+                    <button id="tab-raw" onclick="setOutputTab('raw')" class="tab-btn">Raw</button>
+                  </div>
+                </div>
+
+                <!-- Output Body -->
+                <div id="output-body" class="output-body">
+
+                  <!-- Idle -->
+                  <div id="output-idle"
+                    class="flex flex-col items-center justify-center h-full gap-4 text-center py-10">
+                    <div
+                      class="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-500/8 border border-[var(--border)]">
+                      <svg class="w-7 h-7 text-slate-400 opacity-50" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 font-display">Console Ready</h4>
+                      <p class="text-[11px] text-slate-400 mt-1.5 max-w-[200px] leading-relaxed">Paste code and trigger
+                        an analysis to see AI diagnostics here.</p>
+                    </div>
+                  </div>
+
+                  <!-- Loading -->
+                  <div id="output-thinking"
+                    class="hidden flex flex-col items-center justify-center h-full gap-5 text-center py-10">
+                    <!-- Honeycomb Loader -->
+                    <div class="honeycomb-wrapper flex items-center justify-center h-16 mb-4">
+                      <div class="honeycomb">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <h4 id="thinking-label" class="text-xs font-bold text-violet-500 font-mono tracking-widest">
+                        CONNECTING...</h4>
+                      <p id="thinking-sub" class="text-[11px] text-slate-400 max-w-[200px] leading-relaxed">Initializing
+                        pipeline...</p>
+                      <div
+                        class="w-36 h-[2px] bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden mt-2 mx-auto">
+                        <div id="spin-progress"
+                          class="h-full bg-gradient-to-r from-violet-500 to-blue-500 transition-all duration-300"
+                          style="width:0%"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Rendered Output -->
+                  <div id="output-rendered" class="md-content hidden"></div>
+
+                  <!-- Raw Output -->
+                  <pre id="output-raw"
+                    class="hidden text-xs text-slate-700 dark:text-slate-300 font-mono bg-[var(--muted)] border border-[var(--border)] p-3.5 rounded-xl overflow-x-auto select-all whitespace-pre-wrap"></pre>
+                </div>
+
+                <!-- Output Footer -->
+                <div id="output-actions-bar" class="hidden output-footer">
+                  <button onclick="copyOutput()"
+                    class="text-[10px] font-bold text-slate-400 hover:text-violet-500 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i> Copy
+                  </button>
+                  <button onclick="exportMarkdown()"
+                    class="text-[10px] font-bold text-slate-400 hover:text-violet-500 transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Export .md
+                  </button>
+                </div>
+              </div>
+
+              <!-- Metrics Panel -->
+              <div id="perf-panel" class="hidden glass rounded-2xl p-4 space-y-3 flex-shrink-0"
+                style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-chart-bar text-violet-500 text-sm"></i>
+                  <h4 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Scan Metrics
+                  </h4>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-[10px] font-semibold">
+                      <span class="text-slate-500 flex items-center gap-1.5"><span
+                          class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>Code Health</span>
+                      <span id="health-val" class="text-violet-500 font-mono">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                      <div id="health-bar" class="progress-bar-fill bg-gradient-to-r from-violet-400 to-violet-600"
+                        style="width:0%"></div>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-[10px] font-semibold">
+                      <span class="text-slate-500 flex items-center gap-1.5"><span
+                          class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>Time Saved</span>
+                      <span id="time-val" class="text-blue-500 font-mono">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                      <div id="time-bar" class="progress-bar-fill bg-gradient-to-r from-blue-400 to-blue-600"
+                        style="width:0%"></div>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-[10px] font-semibold">
+                      <span class="text-slate-500 flex items-center gap-1.5"><span
+                          class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Complexity</span>
+                      <span id="complex-val" class="text-amber-500 font-mono">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                      <div id="complex-bar" class="progress-bar-fill bg-gradient-to-r from-amber-400 to-amber-600"
+                        style="width:0%"></div>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <div class="flex justify-between text-[10px] font-semibold">
+                      <span class="text-slate-500 flex items-center gap-1.5"><span
+                          class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Security</span>
+                      <span id="security-val" class="text-emerald-500 font-mono">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                      <div id="security-bar" class="progress-bar-fill bg-gradient-to-r from-emerald-400 to-emerald-600"
+                        style="width:0%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ╔═══════════════════════════════════════╗
+             ║ VIEW 2: AI CHAT CONSOLE              ║
+             ╚═══════════════════════════════════════╝ -->
+        <section id="view-chat" class="view-pane hidden flex-1 min-h-0 flex flex-col gap-4 animate-fade-in">
+          <div class="max-w-4xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
+            <div>
+              <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white">AI Chat Console</h1>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Explain bugs, refactor logic, or ask coding questions.</p>
+            </div>
+            <button onclick="clearChat()" class="btn-ghost text-xs flex-shrink-0">
+              <i class="fa-solid fa-rotate-left"></i> Reset Chat
+            </button>
+          </div>
+
+          <div class="max-w-4xl mx-auto w-full flex-1 min-h-0 h-full">
+            <div class="chat-wrap glass h-full w-full" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+              <!-- Chat top bar -->
+              <div
+                class="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[rgba(var(--muted-rgb),0.5)] flex-shrink-0">
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-9 h-9 rounded-xl flex items-center justify-center bg-violet-500/10 border border-violet-500/22 text-violet-500">
+                    <i class="fa-solid fa-robot text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-900 dark:text-white">Ethrix Review Assistant</div>
+                    <div class="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono mt-0.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Online
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Model Variant Select for Chat -->
+                <div class="flex items-center gap-2">
+                  <select id="setting-model-chat"
+                    class="bg-[var(--muted)] border border-[var(--border)] text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
+                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Messages -->
+              <div id="chat-body-container" class="chat-body">
+                <div class="flex flex-col gap-1">
+                  <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. Send me a snippet, ask
+                    me to explain a bug, or inquire about coding conventions.</div>
+                  <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
+                </div>
+              </div>
+
+              <!-- Chat Input -->
+              <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
+                <!-- Attachment preview area -->
+                <div id="chat-attachment-preview" class="hidden flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit">
+                  <i class="fa-solid fa-file-code text-violet-500"></i>
+                  <span id="chat-attachment-name" class="font-mono text-slate-700 dark:text-slate-300 font-semibold">file.py</span>
+                  <button onclick="clearChatAttachment(event)" class="text-slate-400 hover:text-rose-500 transition-colors ml-1.5">
+                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                  </button>
+                </div>
+
+                <!-- Input Row -->
+                <div class="flex items-end gap-2.5 w-full">
+                  <!-- File upload button -->
+                  <button id="btn-chat-upload" onclick="document.getElementById('chat-file-input').click()" 
+                          class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-500/10 border border-[var(--border)] text-slate-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all cursor-pointer flex-shrink-0"
+                          title="Upload code file">
+                    <i class="fa-solid fa-paperclip text-sm"></i>
+                  </button>
+                  <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)">
+
+                  <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                  
+                  <button id="btn-chat-send" onclick="sendChatMessage()" class="chat-send">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ╔═══════════════════════════════════════╗
+             ║ VIEW 3: INTEGRATIONS & SETUP         ║
+             ╚═══════════════════════════════════════╝ -->
+        <section id="view-integrations" class="view-pane hidden flex-1 overflow-y-auto space-y-6 pr-1 py-10 animate-fade-in">
+          <div class="max-w-xl mx-auto w-full text-center flex-shrink-0">
+            <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white">Model & API Settings</h1>
+            <p class="text-xs text-slate-500 mt-1.5">Configure your Groq API key and select your preferred LLM model variant.</p>
+          </div>
+
+          <div class="max-w-xl mx-auto w-full">
+            <!-- Model & API Config Card -->
+            <div class="glass rounded-2xl p-6 space-y-5 glass-hover" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-violet-500/10 border border-violet-500/22 text-violet-500">
+                  <i class="fa-solid fa-sliders text-sm"></i>
+                </div>
+                <div>
+                  <div class="text-[10px] font-bold text-violet-500 font-mono uppercase mb-0.5">Configuration</div>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white">Model & API Settings</h3>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <input type="hidden" id="setting-provider" value="online">
+                
+                <div>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Model Variant</label>
+                  <select id="setting-model"
+                    class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-700 dark:text-slate-300 text-xs px-3 py-2.5 outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
+                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Groq API Key</label>
+                  <div class="relative">
+                    <input id="setting-api-key" type="password" placeholder="Enter your Groq API Key (gsk_...)"
+                      class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-700 dark:text-slate-300 text-xs pl-3 pr-10 py-2.5 outline-none focus:border-violet-500 font-mono transition-colors">
+                    <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                      <i id="api-key-visibility-icon" class="fa-solid fa-eye text-xs"></i>
+                    </button>
+                  </div>
+                  <p class="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                    If left blank, the dashboard will attempt to use the backend server's default environment key.
+                  </p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                  <button onclick="saveApiKey()" class="btn-primary flex-1 justify-center py-2.5">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Key
+                  </button>
+                  <button onclick="removeApiKey()" class="btn-rose px-4 py-2.5" title="Clear saved key">
+                    <i class="fa-solid fa-trash-can"></i> Remove Key
+                  </button>
+                </div>
+
+                <!-- Status Row -->
+                <div class="pt-4 border-t border-[var(--border)] flex items-center justify-between text-xs">
+                  <span class="text-slate-500 font-semibold">Service Status:</span>
+                  <span id="backend-status" class="font-mono text-slate-500">Checking...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Profile Settings Modal -->
+  <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="glass w-full max-w-md rounded-2xl p-6 space-y-6 shadow-2xl scale-95 transition-all duration-300 transform" id="profile-modal-card">
+      <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-circle-user text-violet-500"></i> Profile Settings
+        </h3>
+        <button onclick="closeProfileModal()" class="text-slate-400 hover:text-rose-500 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-5">
+        <!-- Avatar Upload Section -->
+        <div class="flex items-center gap-4">
+          <div id="modal-user-avatar" class="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center relative border border-[var(--border)]"
+               style="background: linear-gradient(135deg,rgba(124,58,237,0.1),rgba(59,130,246,0.1));">
+            <img id="modal-user-img" class="hidden w-full h-full object-cover" src="">
+            <span id="modal-user-initials" class="text-xl font-bold bg-gradient-to-r from-violet-500 to-indigo-500 bg-clip-text text-transparent">TT</span>
+          </div>
+          <div class="flex flex-col gap-2">
+            <button onclick="document.getElementById('avatar-input').click()" class="btn-ghost py-1.5 px-3 text-xs">
+              <i class="fa-solid fa-camera"></i> Change Photo
+            </button>
+            <input type="file" id="avatar-input" class="hidden" accept="image/*" onchange="handleAvatarSelect(event)">
+            <button onclick="removeAvatarImage()" class="text-[10px] text-rose-500 font-semibold hover:underline text-left">
+              Remove Photo
+            </button>
+          </div>
+        </div>
+
+        <!-- Name Input Section -->
+        <div class="space-y-1.5">
+          <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Profile Name</label>
+          <input id="profile-name-input" type="text" placeholder="Enter your name"
+                 class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-700 dark:text-slate-300 text-xs px-3.5 py-2.5 outline-none focus:border-violet-500 transition-colors font-semibold">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-3 border-t border-[var(--border)]">
+        <!-- Logout Button -->
+        <button onclick="handleLogout()" class="btn-rose py-2 px-3 text-xs flex items-center gap-1.5 font-bold">
+          <i class="fa-solid fa-right-from-bracket"></i> Log Out
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeProfileModal()" class="btn-ghost py-2 px-4 text-xs font-bold">
+            Cancel
+          </button>
+          <button onclick="saveProfileChanges()" class="btn-primary py-2 px-4 text-xs font-bold">
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="copy-toast"
+    class="fixed bottom-6 right-6 z-50 bg-slate-950 border border-violet-500/30 text-violet-400 font-semibold text-xs py-3 px-5 rounded-2xl backdrop-blur-md opacity-0 translate-y-6 pointer-events-none transition-all duration-300 shadow-xl">
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════ -->
+  <script>
+    // ── SPA Navigation ─────────────────────────────────
+    const views = ['studio', 'chat', 'integrations'];
+
+    function switchTab(target) {
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.toggle('hidden', v !== target);
+        document.getElementById('nav-' + v).classList.toggle('active', v === target);
+      });
+      const labels = { studio: 'Code Analyzer', chat: 'AI Chat Console', integrations: 'Model & API Settings' };
+      document.getElementById('breadcrumb-active').textContent = labels[target];
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('visible');
+    }
+
+    // ── API & Model Settings Helpers ────────────────────
+    function getApiHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const savedKey = localStorage.getItem('groq_api_key');
+      if (savedKey) {
+        headers['X-Groq-API-Key'] = savedKey;
+      }
+      return headers;
+    }
+
+    function toggleApiKeyVisibility() {
+      const keyInput = document.getElementById('setting-api-key');
+      const icon = document.getElementById('api-key-visibility-icon');
+      if (keyInput && icon) {
+        if (keyInput.type === 'password') {
+          keyInput.type = 'text';
+          icon.className = 'fa-solid fa-eye-slash text-xs';
+        } else {
+          keyInput.type = 'password';
+          icon.className = 'fa-solid fa-eye text-xs';
+        }
+      }
+    }
+
+    function saveApiKey() {
+      const keyInput = document.getElementById('setting-api-key');
+      if (!keyInput) return;
+      const key = keyInput.value.trim();
+      if (!key) {
+        showToast('⚠️ Please enter a valid API key!');
+        return;
+      }
+      localStorage.setItem('groq_api_key', key);
+      showToast('✓ Groq API Key saved successfully!');
+      checkBackendHealth();
+    }
+
+    function removeApiKey() {
+      const keyInput = document.getElementById('setting-api-key');
+      if (keyInput) keyInput.value = '';
+      localStorage.removeItem('groq_api_key');
+      showToast('✓ Groq API Key removed.');
+      checkBackendHealth();
+    }
+
+    function toggleSidebar() {
+      document.getElementById('sidebar').classList.toggle('open');
+      document.getElementById('sidebar-overlay').classList.toggle('visible');
+    }
+
+    // ── Theme Toggle ────────────────────────────────────
+    function applyLightTheme() {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      updateThemeIcon(false);
+    }
+    function applyDarkTheme() {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      updateThemeIcon(true);
+    }
+    function toggleDarkMode() {
+      document.documentElement.classList.contains('dark') ? applyLightTheme() : applyDarkTheme();
+      const ls = document.getElementById('lang-select');
+      if (ls && typeof updateLangBadge === 'function') updateLangBadge(ls.value);
+    }
+    function updateThemeIcon(isDark) {
+      const icon = document.getElementById('theme-toggle-icon');
+      if (icon) icon.className = isDark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
+    }
+
+    // ── Language Badge ──────────────────────────────────
+    const LANG_BADGES = { python: 'PY', javascript: 'JS', typescript: 'TS', rust: 'RS', go: 'GO', cpp: 'C++', yaml: 'YML', json: 'JSON' };
+    function updateLangBadge(lang) {
+      const badge = document.getElementById('lang-badge-display');
+      if (!badge) return;
+      const isDark = document.documentElement.classList.contains('dark');
+      const darkC = { python: ['#818cf8', 'rgba(129,140,248,0.12)'], javascript: ['#fbbf24', 'rgba(251,191,36,0.12)'], typescript: ['#60a5fa', 'rgba(96,165,250,0.12)'], rust: ['#fb923c', 'rgba(251,146,60,0.12)'], go: ['#22d3ee', 'rgba(34,211,238,0.12)'], cpp: ['#c084fc', 'rgba(192,132,252,0.12)'], yaml: ['#34d399', 'rgba(52,211,153,0.12)'], json: ['#fbbf24', 'rgba(251,191,36,0.12)'] };
+      const lightC = { python: ['#4f46e5', 'rgba(79,70,229,0.08)'], javascript: ['#b45309', 'rgba(180,83,9,0.08)'], typescript: ['#1d4ed8', 'rgba(29,78,216,0.08)'], rust: ['#c2410c', 'rgba(194,65,12,0.08)'], go: ['#0e7490', 'rgba(14,116,144,0.08)'], cpp: ['#7c3aed', 'rgba(124,58,237,0.08)'], yaml: ['#047857', 'rgba(4,120,87,0.08)'], json: ['#b45309', 'rgba(180,83,9,0.08)'] };
+      const [color, bg] = (isDark ? darkC : lightC)[lang] || ['#8b5cf6', 'rgba(139,92,246,0.1)'];
+      badge.textContent = LANG_BADGES[lang] || lang.toUpperCase().slice(0, 3);
+      badge.style.color = color;
+      badge.style.background = bg;
+      badge.style.border = `1px solid ${color}40`;
+      badge.style.padding = '3px 8px';
+      badge.style.borderRadius = '7px';
+    }
+
+    // ── Line Numbers ────────────────────────────────────
+    function renderLineNumbers() {
+      const ci = document.getElementById('code-input');
+      const gutter = document.getElementById('ide-gutter');
+      if (!ci || !gutter) return;
+      const lines = ci.value.split('\n');
+      const selStart = ci.selectionStart;
+      const cursorLine = ci.value.substring(0, selStart).split('\n').length;
+      let html = '';
+      for (let i = 1; i <= lines.length; i++) {
+        html += `<span class="ln${i === cursorLine ? ' active-ln' : ''}">${i}</span>`;
+      }
+      gutter.innerHTML = html;
+      gutter.scrollTop = ci.scrollTop;
+      const col = ci.value.substring(0, selStart).split('\n').pop().length + 1;
+      document.getElementById('cursor-pos').textContent = `Ln ${cursorLine}, Col ${col}`;
+      document.getElementById('char-count').textContent = `${ci.value.length} chars`;
+    }
+
+    // ── File Load ───────────────────────────────────────
+    function loadFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('code-input').value = e.target.result;
+        renderLineNumbers();
+        const ext = file.name.split('.').pop().toLowerCase();
+        const map = { py: 'python', js: 'javascript', ts: 'typescript', rs: 'rust', go: 'go', cpp: 'cpp', cc: 'cpp', yaml: 'yaml', yml: 'yaml', json: 'json' };
+        const lang = map[ext] || 'python';
+        document.getElementById('lang-select').value = lang;
+        updateLangBadge(lang);
+        document.getElementById('file-name-label').textContent = file.name;
+        document.getElementById('file-chip').classList.remove('hidden');
+        document.getElementById('file-chip').style.display = 'inline-flex';
+        document.getElementById('drop-label').innerHTML = `File loaded · <span class="text-violet-500">click to replace</span>`;
+        document.getElementById('drop-sub').textContent = `${(file.size / 1024).toFixed(2)} KB`;
+      };
+      reader.readAsText(file);
+    }
+    function handleFileSelect(e) { if (e.target.files[0]) loadFile(e.target.files[0]); }
+    function clearFile(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('file-input').value = '';
+      const chip = document.getElementById('file-chip');
+      chip.classList.add('hidden'); chip.style.display = '';
+      document.getElementById('drop-label').innerHTML = `Drop file here or <span class="text-violet-500">browse</span>`;
+      document.getElementById('drop-sub').textContent = '.py · .js · .ts · .rs · .go · .cpp · .yaml · .json';
+    }
+
+    // ── Drop zone events ────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      const dz = document.getElementById('drop-zone');
+      if (dz) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dz.addEventListener(e, ev => ev.preventDefault()));
+        dz.addEventListener('dragenter', () => dz.classList.add('drag-over'));
+        dz.addEventListener('dragover', () => dz.classList.add('drag-over'));
+        dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+        dz.addEventListener('drop', e => { dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+      }
+      const ci = document.getElementById('code-input');
+      if (ci) {
+        ci.addEventListener('keydown', function (e) {
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const s = this.selectionStart, end = this.selectionEnd;
+            this.value = this.value.substring(0, s) + '  ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = s + 2;
+            renderLineNumbers();
+          }
+        });
+        ci.addEventListener('input', renderLineNumbers);
+        ci.addEventListener('click', renderLineNumbers);
+      }
+      const ls = document.getElementById('lang-select');
+      if (ls) { ls.addEventListener('change', e => updateLangBadge(e.target.value)); updateLangBadge(ls.value); }
+
+      // Load saved Groq API Key
+      const savedKey = localStorage.getItem('groq_api_key');
+      const apiKeyInput = document.getElementById('setting-api-key');
+      if (apiKeyInput && savedKey) {
+        apiKeyInput.value = savedKey;
+      }
+      
+      // Load saved Model Variant
+      const savedModel = localStorage.getItem('groq_model_variant');
+      const modelSelect = document.getElementById('setting-model');
+      const chatModelSelect = document.getElementById('setting-model-chat');
+      if (savedModel) {
+        if (modelSelect) modelSelect.value = savedModel;
+        if (chatModelSelect) chatModelSelect.value = savedModel;
+      }
+      if (modelSelect && chatModelSelect) {
+        modelSelect.addEventListener('change', (e) => {
+          chatModelSelect.value = e.target.value;
+          localStorage.setItem('groq_model_variant', e.target.value);
+        });
+        chatModelSelect.addEventListener('change', (e) => {
+          modelSelect.value = e.target.value;
+          localStorage.setItem('groq_model_variant', e.target.value);
+        });
+      }
+
+      // Initialize profile info
+      applyProfileInfo();
+      const nameInp = document.getElementById('profile-name-input');
+      if (nameInp) {
+        nameInp.addEventListener('input', updateModalAvatar);
+      }
+
+      const isDark = document.documentElement.classList.contains('dark');
+      updateThemeIcon(isDark);
+      switchTab('studio');
+      checkBackendHealth();
+      setInterval(checkBackendHealth, 10000);
+      renderLineNumbers();
+    });
+
+    // ── Output Tab ──────────────────────────────────────
+    let currentMarkdown = '';
+    let outputTab = 'rendered';
+
+    function setOutputTab(tab) {
+      outputTab = tab;
+      ['rendered', 'raw'].forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+      });
+      if (currentMarkdown) showOutput();
+    }
+
+    function showIdle() {
+      document.getElementById('output-idle').classList.remove('hidden');
+      document.getElementById('output-thinking').classList.add('hidden');
+      document.getElementById('output-rendered').classList.add('hidden');
+      document.getElementById('output-raw').classList.add('hidden');
+      document.getElementById('output-actions-bar').classList.add('hidden');
+    }
+    function showThinking() {
+      document.getElementById('output-idle').classList.add('hidden');
+      document.getElementById('output-thinking').classList.remove('hidden');
+      document.getElementById('output-rendered').classList.add('hidden');
+      document.getElementById('output-raw').classList.add('hidden');
+      document.getElementById('output-actions-bar').classList.add('hidden');
+    }
+    function showOutput() {
+      document.getElementById('output-idle').classList.add('hidden');
+      document.getElementById('output-thinking').classList.add('hidden');
+      document.getElementById('output-rendered').classList.toggle('hidden', outputTab !== 'rendered');
+      document.getElementById('output-raw').classList.toggle('hidden', outputTab !== 'raw');
+      document.getElementById('output-actions-bar').classList.remove('hidden');
+    }
+    function setStatusDot(state) {
+      const dot = document.getElementById('output-status-dot');
+      if (!dot) return;
+      const map = { idle: '#64748b', running: '#f59e0b', done: '#10b981', error: '#f43f5e' };
+      dot.style.backgroundColor = map[state] || '#64748b';
+      dot.style.boxShadow = state === 'running' ? '0 0 8px #f59e0b' : state === 'done' ? '0 0 8px #10b981' : 'none';
+    }
+
+    // ── Markdown Parser ─────────────────────────────────
+    function parseMarkdown(md) {
+      return md
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        .replace(/^---$/gm, '<hr>')
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
+        .replace(/\[CRITICAL\]/g, '<span class="badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> CRITICAL</span>')
+        .replace(/\[WARN\]/g, '<span class="badge-warn"><i class="fa-solid fa-circle-exclamation"></i> WARN</span>')
+        .replace(/\[OK\]/g, '<span class="badge-ok"><i class="fa-solid fa-circle-check"></i> OK</span>')
+        .replace(/\[INFO\]/g, '<span class="badge-info"><i class="fa-solid fa-circle-info"></i> INFO</span>')
+        .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+        .replace(/^(?!<[a-z])(\S.+)$/gm, '<p>$1</p>')
+        .replace(/<p><\/p>/g, '');
+    }
+
+    // ── Run Action ──────────────────────────────────────
+    async function runAction(action) {
+      const ci = document.getElementById('code-input');
+      const code = ci.value.trim();
+      if (!code) {
+        ci.style.boxShadow = '0 0 0 2px rgba(244,63,94,0.5)';
+        setTimeout(() => ci.style.boxShadow = '', 1500);
+        showToast('⚠️ Editor is empty!');
+        return;
+      }
+      const lang = document.getElementById('lang-select').value;
+      const btn = document.getElementById(`btn-${action}`);
+      const origHtml = btn.innerHTML;
+      btn.disabled = true; btn.style.opacity = '0.65';
+
+      setStatusDot('running');
+      document.getElementById('output-meta').textContent = 'Processing...';
+      document.getElementById('perf-panel').classList.add('hidden');
+      showThinking();
+
+      const steps = {
+        analyze: [['CONNECTING...', 'Initializing analysis pipeline', 10], ['UPLOADING CODE...', 'Sending to endpoint', 30], ['LINTING...', 'Detecting logical flaws', 60], ['COMPILING...', 'Assembling report', 90]],
+        fix: [['CONNECTING...', 'Initializing refactor pipeline', 15], ['PARSING...', 'Analyzing structure', 50], ['REFACTORING...', 'Generating clean output', 85]],
+        docgen: [['CONNECTING...', 'Initializing docgen pipeline', 15], ['EXTRACTING...', 'Writing Google docstrings', 55], ['FINISHING...', 'Generating commit message', 85]],
+      };
+
+      let stepIdx = 0;
+      const progressBar = document.getElementById('spin-progress');
+      const stepTimer = setInterval(() => {
+        const [lbl, desc, pct] = (steps[action] || steps.analyze)[stepIdx % (steps[action] || steps.analyze).length];
+        document.getElementById('thinking-label').textContent = lbl;
+        document.getElementById('thinking-sub').textContent = desc;
+        if (progressBar) progressBar.style.width = pct + '%';
+        stepIdx++;
+      }, 700);
+
+      let reportMarkdown = '';
+      let isOffline = false;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const provider = document.getElementById('setting-provider')?.value || 'online';
+        const model = document.getElementById('setting-model')?.value || '';
+        const res = await fetch(`http://127.0.0.1:8000/${action}`, {
+          method: 'POST', signal: controller.signal,
+          headers: getApiHeaders(),
+          body: JSON.stringify({ code, language: lang, provider, model })
+        });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error(`API ${res.status}`);
+        const json = await res.json();
+        if (action === 'analyze') reportMarkdown = json.raw_markdown_report || json.report || JSON.stringify(json, null, 2);
+        else if (action === 'fix') reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}\n\n---\n## Refactored Code\n\`\`\`${lang}\n${json.refactored_code}\n\`\`\``;
+        else reportMarkdown = `# Automated Documentation\n\n## Commit Message\n\`${json.commit_message}\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${json.documented_code}\n\`\`\``;
+      } catch {
+        isOffline = true;
+        showToast('⚠️ Server offline — running fallback diagnostics.');
+        reportMarkdown = generateFallbackReport(code, lang, action);
+      } finally {
+        clearInterval(stepTimer);
+        if (progressBar) progressBar.style.width = '100%';
+      }
+
+      await new Promise(r => setTimeout(r, 250));
+      currentMarkdown = reportMarkdown;
+      document.getElementById('output-rendered').innerHTML = parseMarkdown(currentMarkdown);
+      document.getElementById('output-raw').textContent = currentMarkdown;
+      setStatusDot(isOffline ? 'error' : 'done');
+      document.getElementById('output-meta').textContent = `${code.split('\n').length} lines · ${new Date().toLocaleTimeString()} ${isOffline ? '(offline)' : ''}`;
+      showOutput();
+      animateMetrics(code, action, isOffline);
+
+      btn.disabled = false; btn.style.opacity = '1'; btn.innerHTML = origHtml;
+      document.getElementById('output-body').scrollTop = 0;
+    }
+
+    function clearEditor() {
+      document.getElementById('code-input').value = '';
+      renderLineNumbers(); clearFile();
+      currentMarkdown = ''; showIdle(); setStatusDot('idle');
+      document.getElementById('output-meta').textContent = 'No report yet';
+      document.getElementById('perf-panel').classList.add('hidden');
+    }
+    function copyOutput() { if (!currentMarkdown) return; navigator.clipboard.writeText(currentMarkdown).then(() => showToast('✓ Copied to clipboard')); }
+    function exportMarkdown() {
+      if (!currentMarkdown) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([currentMarkdown], { type: 'text/markdown' }));
+      a.download = 'ethrix-report.md'; a.click();
+      showToast('⬇ Downloading report...');
+    }
+
+    // ── Fallback Report ─────────────────────────────────
+    function generateFallbackReport(code, lang, action) {
+      const lc = code.split('\n').length, loops = (code.match(/for |while /g) || []).length, todos = (code.match(/TODO|FIXME/g) || []).length, longLines = code.split('\n').filter(l => l.length > 80).length;
+      const score = Math.max(35, 100 - longLines * 4 - todos * 5 - (loops > 3 ? 10 : 0));
+      const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 65 ? 'C' : 'D';
+      if (action === 'analyze') return `# ⚠️ Offline Diagnostics (Static Scan)\n> **API Server**: [WARN] Unreachable.\n\n---\n## Quality Grade\n[${score >= 75 ? 'OK' : 'WARN'}] Health: **${score}/100** (Grade **${grade}**)\n\n---\n## Gutter Checks\n- **Lines**: \`${lc}\`\n- **Loops**: \`${loops}\`\n- **Long lines (>80 chars)**: \`${longLines}\`\n- **TODO markers**: \`${todos}\``;
+      if (action === 'fix') return `# ⚠️ Offline Refactoring\n> **Server Status**: [WARN] Unreachable.\n\n---\n## Refactored Output\n\`\`\`${lang}\n${code.split('\n').map(l => l.trimEnd()).join('\n').trimEnd()}\n\`\`\``;
+      return `# ⚠️ Offline Docgen\n> **Server Status**: [WARN] Unreachable.\n\n---\n## Suggested Commit\n\`docs: document ${lang} code\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${code}\n\`\`\``;
+    }
+
+    // ── Metrics ─────────────────────────────────────────
+    function animateMetrics(code, action, isOffline) {
+      const lc = code.split('\n').length, todos = (code.match(/TODO|FIXME/g) || []).length, longLines = code.split('\n').filter(l => l.length > 80).length;
+      let health = isOffline ? 68 : Math.max(40, 95 - longLines * 2 - todos * 3);
+      let timeSaved = isOffline ? 50 : Math.min(99, 75 + lc * 0.2);
+      let complexity = isOffline ? 45 : Math.max(30, 88 - (code.match(/for |while |if |elif |else/g) || []).length * 4);
+      let security = isOffline ? 60 : Math.max(50, 99 - (code.match(/password|key|token|secret/gi) || []).length * 15);
+      if (action === 'fix') { health = Math.min(98, health + 10); complexity = Math.min(95, complexity + 15); }
+      document.getElementById('perf-panel').classList.remove('hidden');
+      requestAnimationFrame(() => setTimeout(() => {
+        setProgressBar('health-bar', 'health-val', health);
+        setProgressBar('time-bar', 'time-val', timeSaved);
+        setProgressBar('complex-bar', 'complex-val', complexity);
+        setProgressBar('security-bar', 'security-val', security);
+      }, 100));
+    }
+    function setProgressBar(barId, valId, val) {
+      const bar = document.getElementById(barId), txt = document.getElementById(valId);
+      if (!bar || !txt) return;
+      bar.style.width = val + '%';
+      let cur = 0; const inc = Math.ceil(val / 20);
+      const t = setInterval(() => { cur = Math.min(cur + inc, val); txt.textContent = cur + '%'; if (cur >= val) clearInterval(t); }, 25);
+    }
+
+    // ── Backend Health ──────────────────────────────────
+    async function checkBackendHealth() {
+      const statusEl = document.getElementById('backend-status');
+      try {
+        const savedKey = localStorage.getItem('groq_api_key');
+        const headers = {};
+        if (savedKey) headers['X-Groq-API-Key'] = savedKey;
+        const res = await fetch('http://127.0.0.1:8000/', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (statusEl) statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Online (Groq: ${data.groq_api_key})</span>`;
+        }
+      } catch {
+        if (statusEl) statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Offline</span>`;
+      }
+    }
+
+    // ── AI Chat ─────────────────────────────────────────
+    let chatHistory = [];
+    let selectedChatFile = null;
+
+    function handleChatFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        selectedChatFile = {
+          name: file.name,
+          content: ev.target.result
+        };
+        const preview = document.getElementById('chat-attachment-preview');
+        const nameEl = document.getElementById('chat-attachment-name');
+        if (preview && nameEl) {
+          nameEl.textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+          preview.classList.remove('hidden');
+          preview.style.display = 'inline-flex';
+        }
+        showToast(`📎 File attached: ${file.name}`);
+      };
+      reader.readAsText(file);
+    }
+
+    function clearChatAttachment(e) {
+      if (e) e.stopPropagation();
+      selectedChatFile = null;
+      document.getElementById('chat-file-input').value = '';
+      const preview = document.getElementById('chat-attachment-preview');
+      if (preview) {
+        preview.classList.add('hidden');
+        preview.style.display = '';
+      }
+    }
+
+    async function sendChatMessage() {
+      const inp = document.getElementById('chat-input');
+      const msg = inp.value.trim();
+      if (!msg && !selectedChatFile) return;
+
+      let apiMessage = msg;
+      let displayMessage = msg;
+
+      if (selectedChatFile) {
+        apiMessage = `I have uploaded a file named "${selectedChatFile.name}". Here is its content:\n\n\`\`\`\n${selectedChatFile.content}\n\`\`\`\n\n${msg || "Please review this code file and provide feedback/diagnostics."}`;
+        displayMessage = `<div class="flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit mb-2 font-mono" style="color:inherit;"><i class="fa-solid fa-file-code text-violet-500"></i><b>${esc(selectedChatFile.name)}</b></div>${esc(msg) || "<i>Please review this file.</i>"}`;
+      } else {
+        displayMessage = esc(msg);
+      }
+
+      inp.value = '';
+      appendMsg(displayMessage, 'user', true);
+      chatHistory.push({ role: 'user', text: apiMessage });
+
+      // Clear the attachment preview and variable
+      clearChatAttachment();
+
+      const typId = showTyping();
+      const sendBtn = document.getElementById('btn-chat-send');
+      sendBtn.disabled = true;
+      try {
+        const provider = 'online';
+        const model = document.getElementById('setting-model-chat')?.value || 'llama-3.3-70b-versatile';
+        const res = await fetch('http://127.0.0.1:8000/chat', {
+          method: 'POST', headers: getApiHeaders(),
+          body: JSON.stringify({ message: apiMessage, history: chatHistory.slice(0, -1), provider, model })
+        });
+        removeTyping(typId);
+        if (res.ok) {
+          const data = await res.json();
+          const reply = data.reply || 'No response.';
+          appendMsg(reply, 'model'); chatHistory.push({ role: 'model', text: reply });
+        } else appendMsg('⚠️ Server error occurred.', 'model');
+      } catch {
+        removeTyping(typId);
+        appendMsg(getOfflineReply(apiMessage), 'model');
+      } finally { sendBtn.disabled = false; }
+    }
+
+    function appendMsg(text, role, isHTML = false) {
+      const body = document.getElementById('chat-body-container');
+      if (!body) return;
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const el = document.createElement('div');
+      el.className = 'flex flex-col gap-1';
+      const content = isHTML ? text : esc(text).replace(/\n/g, '<br>');
+      el.innerHTML = `<div class="msg msg-${role === 'user' ? 'user' : 'model'} ${role === 'user' ? 'ml-auto' : ''} animate-fade-in">${content}</div><div class="msg-time" style="align-self:${role === 'user' ? 'flex-end' : 'flex-start'};padding:0 4px">${role === 'user' ? 'You' : 'Ethrix'} · ${time}</div>`;
+      body.appendChild(el);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function showTyping() {
+      const body = document.getElementById('chat-body-container');
+      const id = 'typ-' + Date.now();
+      const el = document.createElement('div');
+      el.className = 'typing-ind'; el.id = id;
+      el.innerHTML = '<div class="typing-dot"></div><div class="typing-dot" style="animation-delay:0.2s"></div><div class="typing-dot" style="animation-delay:0.4s"></div>';
+      body.appendChild(el); body.scrollTop = body.scrollHeight;
+      return id;
+    }
+    function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+    function getOfflineReply(msg) {
+      const l = msg.toLowerCase();
+      if (l.includes('hi') || l.includes('hello')) return "Hello! I'm Ethrix. The FastAPI backend server is unreachable — but the Code Studio static analysis still works!";
+      if (l.includes('extension') || l.includes('vs code')) return "VS Code: select code → right-click → 'Ethrix: Optimize'.";
+      return "The connection to the Ethrix backend (http://127.0.0.1:8000/) failed. Please check if the backend service is running.";
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      document.getElementById('chat-body-container').innerHTML = `
+        <div class="flex flex-col gap-1">
+          <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. How can I help?</div>
+          <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
+        </div>`;
+    }
+    function triggerQuickPrompt(msg) { document.getElementById('chat-input').value = msg; sendChatMessage(); }
+    function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    // ── Profile Settings Actions ────────────────────────
+    let tempAvatarBase64 = null;
+
+    function getInitials(name) {
+      if (!name) return "TT";
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    }
+
+    function openProfileModal() {
+      const modal = document.getElementById('profile-modal');
+      const card = document.getElementById('profile-modal-card');
+      const nameInput = document.getElementById('profile-name-input');
+      const currentName = localStorage.getItem('profile_name') || 'Team Titans 4';
+      
+      if (nameInput) nameInput.value = currentName;
+      tempAvatarBase64 = null;
+      updateModalAvatar();
+
+      if (modal && card) {
+        modal.classList.remove('pointer-events-none');
+        modal.classList.add('opacity-100');
+        card.classList.remove('scale-95');
+        card.classList.add('scale-100');
+      }
+    }
+
+    function closeProfileModal() {
+      const modal = document.getElementById('profile-modal');
+      const card = document.getElementById('profile-modal-card');
+      if (modal && card) {
+        modal.classList.add('pointer-events-none');
+        modal.classList.remove('opacity-100');
+        card.classList.add('scale-95');
+        card.classList.remove('scale-100');
+      }
+    }
+
+    function updateModalAvatar() {
+      const savedName = document.getElementById('profile-name-input')?.value || localStorage.getItem('profile_name') || 'Team Titans 4';
+      const initials = getInitials(savedName);
+      
+      const imgEl = document.getElementById('modal-user-img');
+      const initialsEl = document.getElementById('modal-user-initials');
+      
+      const currentPic = tempAvatarBase64 !== null ? tempAvatarBase64 : localStorage.getItem('profile_pic');
+      
+      if (currentPic) {
+        if (imgEl) {
+          imgEl.src = currentPic;
+          imgEl.classList.remove('hidden');
+        }
+        initialsEl?.classList.add('hidden');
+      } else {
+        if (imgEl) {
+          imgEl.src = '';
+          imgEl.classList.add('hidden');
+        }
+        if (initialsEl) {
+          initialsEl.textContent = initials;
+          initialsEl.classList.remove('hidden');
+        }
+      }
+    }
+
+    function handleAvatarSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showToast('⚠️ Please upload an image file!');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = ev => {
+        tempAvatarBase64 = ev.target.result;
+        updateModalAvatar();
+        showToast('✓ Photo loaded.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeAvatarImage() {
+      tempAvatarBase64 = '';
+      updateModalAvatar();
+      showToast('✓ Photo removed.');
+    }
+
+    function saveProfileChanges() {
+      const nameInput = document.getElementById('profile-name-input');
+      if (!nameInput) return;
+      const newName = nameInput.value.trim();
+      if (!newName) {
+        showToast('⚠️ Name cannot be empty!');
+        return;
+      }
+      
+      localStorage.setItem('profile_name', newName);
+      if (tempAvatarBase64 !== null) {
+        if (tempAvatarBase64 === '') {
+          localStorage.removeItem('profile_pic');
+        } else {
+          localStorage.setItem('profile_pic', tempAvatarBase64);
+        }
+        tempAvatarBase64 = null;
+      }
+      
+      applyProfileInfo();
+      closeProfileModal();
+      showToast('✓ Profile updated successfully.');
+    }
+
+    function applyProfileInfo() {
+      const name = localStorage.getItem('profile_name') || 'Team Titans 4';
+      const pic = localStorage.getItem('profile_pic');
+      const initials = getInitials(name);
+      
+      const sidebarName = document.getElementById('sb-user-name');
+      const sidebarInitials = document.getElementById('sb-user-initials');
+      const sidebarImg = document.getElementById('sb-user-img');
+      
+      if (sidebarName) sidebarName.textContent = name;
+      
+      if (pic) {
+        if (sidebarImg) {
+          sidebarImg.src = pic;
+          sidebarImg.classList.remove('hidden');
+        }
+        sidebarInitials?.classList.add('hidden');
+      } else {
+        if (sidebarImg) {
+          sidebarImg.src = '';
+          sidebarImg.classList.add('hidden');
+        }
+        if (sidebarInitials) {
+          sidebarInitials.textContent = initials;
+          sidebarInitials.classList.remove('hidden');
+        }
+      }
+    }
+
+    function handleLogout() {
+      showToast('ℹ Logging out...');
+      localStorage.removeItem('profile_name');
+      localStorage.removeItem('profile_pic');
+      setTimeout(() => {
+        window.location.href = '../ethrix-landing/index.html';
+      }, 1000);
+    }
+
+    // ── Toast ───────────────────────────────────────────
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById('copy-toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.style.opacity = '1'; t.style.transform = 'translateY(0)';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(24px)'; }, 2400);
+    }
+  </script>
+</body>
+
+</html>
