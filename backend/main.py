@@ -737,16 +737,47 @@ async def auth_signup(payload: SignupPayload, background_tasks: BackgroundTasks)
             
     # Send verification email in background
     email_html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-      <h2 style="color: #7c3aed; text-align: center;">Welcome to Ethrix Forge!</h2>
-      <p>Hi {name},</p>
-      <p>Thank you for creating an account with Ethrix Forge. To complete your sign-up, please verify your email using the 6-digit code below:</p>
-      <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
-        <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #0f172a;">{code}</span>
+    <div style="background-color: #0b0f19; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; text-align: center; color: #f8fafc; border-radius: 16px;">
+      <div style="max-width: 500px; margin: 0 auto; background-color: #111827; border: 1px solid rgba(124, 58, 237, 0.25); border-radius: 16px; padding: 32px; text-align: left; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4);">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="font-size: 26px; font-weight: 800; margin: 0; color: #ffffff; letter-spacing: -0.02em;">
+            Ethrix<span style="color: #8b5cf6;">Forge</span>
+          </h2>
+          <p style="font-size: 10px; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; margin-top: 4px; margin-bottom: 0;">AI-Powered Code Reviewer</p>
+        </div>
+        
+        <h3 style="font-size: 18px; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 12px; text-align: center;">Welcome to Ethrix Forge!</h3>
+        
+        <p style="font-size: 13.5px; line-height: 1.6; color: #cbd5e1; margin-top: 0; margin-bottom: 20px;">
+          Hi {name},<br><br>
+          Thank you for creating an account with Ethrix Forge! To complete your sign-up and start analyzing, optimizing, and refactoring your codebase with AI, please verify your email using this 6-digit code:
+        </p>
+        
+        <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(59, 130, 246, 0.12)); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 30px; font-weight: 800; letter-spacing: 6px; color: #a78bfa; font-family: 'Courier New', Courier, monospace; display: block; padding-left: 6px;">{code}</span>
+        </div>
+        
+        <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 24px; text-align: center;">
+          This verification code is valid for 10 minutes.
+        </p>
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+          <a href="https://ethrix-forge.vercel.app" target="_blank" style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(124, 58, 237, 0.2);">
+            Launch Ethrix Studio
+          </a>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0;" />
+        
+        <div style="text-align: center;">
+          <p style="font-size: 12px; margin: 0; color: #94a3b8; font-weight: 500;">
+            Built by <span style="color: #ffffff; font-weight: bold;">Team Titans 4</span>
+          </p>
+          <p style="font-size: 10px; margin: 4px 0 0 0; color: #475569; font-family: monospace;">
+            &copy; 2026 Ethrix Forge. All rights reserved.
+          </p>
+        </div>
       </div>
-      <p style="font-size: 12px; color: #64748b;">This code is valid for 10 minutes. If you did not request this code, please ignore this email.</p>
-      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="font-size: 11px; text-align: center; color: #94a3b8;">Built by Team Titans 4 for CodeVortex Hackathon</p>
     </div>
     """
     background_tasks.add_task(
@@ -858,16 +889,47 @@ async def auth_resend(payload: ResendPayload, background_tasks: BackgroundTasks)
     
     # Send email in background
     email_html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-      <h2 style="color: #7c3aed; text-align: center;">Verify your Ethrix Forge Account</h2>
-      <p>Hi {user['name']},</p>
-      <p>Here is your new 6-digit email verification code:</p>
-      <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
-        <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #0f172a;">{code}</span>
+    <div style="background-color: #0b0f19; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; text-align: center; color: #f8fafc; border-radius: 16px;">
+      <div style="max-width: 500px; margin: 0 auto; background-color: #111827; border: 1px solid rgba(124, 58, 237, 0.25); border-radius: 16px; padding: 32px; text-align: left; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4);">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h2 style="font-size: 26px; font-weight: 800; margin: 0; color: #ffffff; letter-spacing: -0.02em;">
+            Ethrix<span style="color: #8b5cf6;">Forge</span>
+          </h2>
+          <p style="font-size: 10px; color: #8b5cf6; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; margin-top: 4px; margin-bottom: 0;">AI-Powered Code Reviewer</p>
+        </div>
+        
+        <h3 style="font-size: 18px; font-weight: 700; color: #ffffff; margin-top: 0; margin-bottom: 12px; text-align: center;">New Verification Code</h3>
+        
+        <p style="font-size: 13.5px; line-height: 1.6; color: #cbd5e1; margin-top: 0; margin-bottom: 20px;">
+          Hi {user['name']},<br><br>
+          You requested a new verification code. To verify your email and activate your Ethrix Forge account, please enter the following 6-digit code:
+        </p>
+        
+        <div style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(59, 130, 246, 0.12)); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 30px; font-weight: 800; letter-spacing: 6px; color: #a78bfa; font-family: 'Courier New', Courier, monospace; display: block; padding-left: 6px;">{code}</span>
+        </div>
+        
+        <p style="font-size: 12px; color: #64748b; margin-top: 0; margin-bottom: 24px; text-align: center;">
+          This verification code is valid for 10 minutes.
+        </p>
+        
+        <div style="text-align: center; margin-bottom: 24px;">
+          <a href="https://ethrix-forge.vercel.app" target="_blank" style="background-color: #7c3aed; color: #ffffff; padding: 12px 24px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(124, 58, 237, 0.2);">
+            Launch Ethrix Studio
+          </a>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 24px 0;" />
+        
+        <div style="text-align: center;">
+          <p style="font-size: 12px; margin: 0; color: #94a3b8; font-weight: 500;">
+            Built by <span style="color: #ffffff; font-weight: bold;">Team Titans 4</span>
+          </p>
+          <p style="font-size: 10px; margin: 4px 0 0 0; color: #475569; font-family: monospace;">
+            &copy; 2026 Ethrix Forge. All rights reserved.
+          </p>
+        </div>
       </div>
-      <p style="font-size: 12px; color: #64748b;">This code is valid for 10 minutes.</p>
-      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-      <p style="font-size: 11px; text-align: center; color: #94a3b8;">Built by Team Titans 4 for CodeVortex Hackathon</p>
     </div>
     """
     background_tasks.add_task(
