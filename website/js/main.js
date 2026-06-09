@@ -9,7 +9,12 @@ let outputTab = 'rendered';
 function getBackendUrl() {
   const url = localStorage.getItem('backend_url');
   if (url) return url.replace(/\/$/, '');
-  return 'http://127.0.0.1:8000';
+  
+  // Auto-detect environment: local vs production
+  const hostname = window.location.hostname;
+  const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
+  
+  return isLocal ? 'http://127.0.0.1:8000' : 'https://ethrix-forge.onrender.com';
 }
 
 // ── Language badges & color schemes ───────────────
