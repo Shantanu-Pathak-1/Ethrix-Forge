@@ -230,7 +230,7 @@
       box-shadow:
         0 16px 45px rgba(15, 23, 42, 0.08),
         inset 0 1px 0 rgba(255, 255, 255, 0.38);
-      transition: transform 0.25s ease, background 0.3s, border 0.3s, box-shadow 0.3s;
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
     }
 
     .dark .glass {
@@ -250,7 +250,22 @@
     }
 
     .glass:hover {
-      transform: translateY(-3px);
+      transform: translateY(-6px) scale(1.015);
+      border-color: rgba(var(--primary-rgb), 0.5);
+      box-shadow: 0 24px 48px rgba(var(--primary-rgb), 0.16), 0 0 0 1px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .dark .glass:hover {
+      box-shadow: 0 24px 48px rgba(var(--primary-rgb), 0.24), 0 0 20px rgba(var(--primary-rgb), 0.15);
+    }
+
+    /* Icon micro-animations inside glass cards */
+    .glass i, .glass .fa-solid, .glass .fa-regular {
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .glass:hover i, .glass:hover .fa-solid, .glass:hover .fa-regular {
+      transform: scale(1.15) rotate(5deg);
     }
 
     /* Shared Utilities */
@@ -281,7 +296,7 @@
       border-radius: var(--radius);
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.25s ease-in-out;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
       letter-spacing: 0.04em;
       position: relative;
       overflow: hidden;
@@ -290,9 +305,13 @@
 
     .btn-neon:hover {
       background: var(--accent);
-      border-color: var(--ring);
-      box-shadow: 0 10px 24px rgba(124, 58, 237, 0.12);
-      transform: translateY(-2px);
+      border-color: rgba(var(--primary-rgb), 0.6);
+      box-shadow: 0 10px 24px rgba(var(--primary-rgb), 0.15);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .btn-neon:active {
+      transform: translateY(0) scale(0.98);
     }
 
     .btn-solid {
@@ -303,14 +322,18 @@
       font-weight: 700;
       cursor: pointer;
       border: none;
-      transition: all 0.25s ease-in-out;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
       letter-spacing: 0.04em;
-      box-shadow: 0 14px 28px rgba(109, 40, 217, 0.18);
+      box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.15);
     }
 
     .btn-solid:hover {
-      box-shadow: 0 18px 34px rgba(109, 40, 217, 0.24);
-      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 15px 30px rgba(var(--primary-rgb), 0.3);
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    .btn-solid:active {
+      transform: translateY(0) scale(0.98);
     }
 
     /* Shared Editor Blocks */
@@ -320,13 +343,15 @@
       background: var(--muted);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
       cursor: pointer;
-      transition: all 0.25s ease;
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .dropzone:hover,
     .dropzone.drag-over {
-      border-color: var(--ring);
+      border-color: rgba(var(--primary-rgb), 0.6);
       background: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(var(--primary-rgb), 0.05);
     }
 
     /* Shared IDE Blocks */
@@ -541,6 +566,13 @@
       background: rgba(255, 255, 255, 0.78);
       border: 1px solid rgba(148, 163, 184, 0.2);
       box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+      transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    }
+
+    .hero-feature:hover {
+      transform: translateY(-4px) scale(1.02);
+      border-color: rgba(var(--primary-rgb), 0.4);
+      box-shadow: 0 20px 40px rgba(var(--primary-rgb), 0.12);
     }
 
     html:not(.dark) .hero-feature {
@@ -820,12 +852,6 @@
             </svg>
           </label>
         </div>
-        <!-- Hackathon Round Badge -->
-        <span
-          class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-neon/10 border border-neon/25 text-neon hero-badge">
-          <span class="w-1.5 h-1.5 rounded-full bg-neon animate-ping"></span>
-          CodeVortex Hackathon 2026
-        </span>
         <!-- Login Button -->
         <a href="login.html"
           class="btn-neon text-xs md:text-sm py-1.5 px-4 rounded-lg flex items-center gap-2 cursor-pointer">
