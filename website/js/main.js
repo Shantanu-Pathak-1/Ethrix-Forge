@@ -353,7 +353,8 @@ async function runAction(action) {
     return;
   }
 
-  const lang = document.getElementById('lang-select').value;
+  const langSelect = document.getElementById('lang-select');
+  const lang = langSelect ? langSelect.value : 'auto';
   const btn = document.getElementById(`btn-${action === 'analyze' ? 'analyze' : action}`);
   
   // Set UI loading states
