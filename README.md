@@ -73,3 +73,9 @@ This project is fully ready for deployment:
 1. Deploy the `/website` directory as a static website to **Vercel** or **Netlify**.
 2. Once the frontend is live, open the dashboard settings in your browser and set the **Backend API URL** to your hosted Render URL (e.g., `https://ethrix-backend.onrender.com`).
 3. Your web app will now communicate directly with your cloud-hosted backend server!
+
+
+
+
+mongodb connection string : mongodb+srv://dammytoon1_db_user:<db_password>@ai-tech-sphere.frzq1nc.mongodb.net/?appName=ai-tech-sphere
+
