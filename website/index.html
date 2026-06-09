@@ -660,6 +660,73 @@
         transform: rotate(360deg);
       }
     }
+
+    /* Theme Toggle Switch */
+    #theme-toggle-button {
+      font-size: 10px; /* Compact sizing for navbar placement */
+      position: relative;
+      display: inline-block;
+      width: 7em;
+      cursor: pointer;
+    }
+
+    #toggle {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    #container,
+    #patches,
+    #stars,
+    #button,
+    #sun,
+    #moon,
+    #cloud {
+      transition-property: all;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 0.25s;
+    }
+
+    #toggle:checked + svg #container {
+      fill: #2b4360;
+    }
+
+    #toggle:checked + svg #button {
+      transform: translate(28px, 2.333px);
+    }
+
+    #sun {
+      opacity: 1;
+    }
+
+    #toggle:checked + svg #sun {
+      opacity: 0;
+    }
+
+    #moon {
+      opacity: 0;
+    }
+
+    #toggle:checked + svg #moon {
+      opacity: 1;
+    }
+
+    #cloud {
+      opacity: 1;
+    }
+
+    #toggle:checked + svg #cloud {
+      opacity: 0;
+    }
+
+    #stars {
+      opacity: 0;
+    }
+
+    #toggle:checked + svg #stars {
+      opacity: 1;
+    }
   </style>
 </head>
 
@@ -703,12 +770,56 @@
 
       <!-- Navigation & Badges -->
       <div class="flex items-center gap-4">
-        <!-- Theme Toggle Button -->
-        <button id="theme-toggle" onclick="toggleDarkMode()"
-          class="p-2 rounded-lg border border-border bg-slate-200/70 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all flex items-center justify-center shadow-sm backdrop-blur-md"
-          title="Toggle Dark/Light Mode">
-          <i id="theme-toggle-icon" class="fa-solid fa-sun text-xs"></i>
-        </button>
+        <!-- Theme Toggle Switch -->
+        <div class="flex items-center justify-center">
+          <label id="theme-toggle-button">
+            <input type="checkbox" id="toggle" onchange="toggleDarkMode()">
+            <svg viewBox="0 0 69.667 44" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" class="w-[64px] h-[40px]">
+              <g transform="translate(3.5 3.5)" data-name="Component 15 – 1" id="Component_15_1">
+                <g filter="url(#container)" transform="matrix(1, 0, 0, 1, -3.5, -3.5)">
+                  <rect fill="#83cbd8" transform="translate(3.5 3.5)" rx="17.5" height="35" width="60.667" data-name="container" id="container"></rect>
+                </g>
+                <g transform="translate(2.333 2.333)" id="button">
+                  <g data-name="sun" id="sun">
+                    <g filter="url(#sun-outer)" transform="matrix(1, 0, 0, 1, -5.83, -5.83)">
+                      <circle fill="#f8e664" transform="translate(5.83 5.83)" r="15.167" cy="15.167" cx="15.167" data-name="sun-outer" id="sun-outer-2"></circle>
+                    </g>
+                    <g filter="url(#sun)" transform="matrix(1, 0, 0, 1, -5.83, -5.83)">
+                      <path fill="rgba(246,254,247,0.29)" transform="translate(9.33 9.33)" d="M11.667,0A11.667,11.667,0,1,1,0,11.667,11.667,11.667,0,0,1,11.667,0Z" data-name="sun" id="sun-3"></path>
+                    </g>
+                    <circle fill="#fcf4b9" transform="translate(8.167 8.167)" r="7" cy="7" cx="7" id="sun-inner"></circle>
+                  </g>
+                  <g data-name="moon" id="moon">
+                    <g filter="url(#moon)" transform="matrix(1, 0, 0, 1, -31.5, -5.83)">
+                      <circle fill="#cce6ee" transform="translate(31.5 5.83)" r="15.167" cy="15.167" cx="15.167" data-name="moon" id="moon-3"></circle>
+                    </g>
+                    <g fill="#a6cad0" transform="translate(-24.415 -1.009)" id="patches">
+                      <circle transform="translate(43.009 4.496)" r="2" cy="2" cx="2"></circle>
+                      <circle transform="translate(39.366 17.952)" r="2" cy="2" cx="2" data-name="patch"></circle>
+                      <circle transform="translate(33.016 8.044)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                      <circle transform="translate(51.081 18.888)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                      <circle transform="translate(33.016 22.503)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                      <circle transform="translate(50.081 10.53)" r="1.5" cy="1.5" cx="1.5" data-name="patch"></circle>
+                    </g>
+                  </g>
+                </g>
+                <g filter="url(#cloud)" transform="matrix(1, 0, 0, 1, -3.5, -3.5)">
+                  <path fill="#fff" transform="translate(-3466.47 -160.94)" d="M3512.81,173.815a4.463,4.463,0,0,1,2.243.62.95.95,0,0,1,.72-1.281,4.852,4.852,0,0,1,2.623.519c.034.02-.5-1.968.281-2.716a2.117,2.117,0,0,1,2.829-.274,1.821,1.821,0,0,1,.854,1.858c.063.037,2.594-.049,3.285,1.273s-.865,2.544-.807,2.626a12.192,12.192,0,0,1,2.278.892c.553.448,1.106,1.992-1.62,2.927a7.742,7.742,0,0,1-3.762-.3c-1.28-.49-1.181-2.65-1.137-2.624s-1.417,2.2-2.623,2.2a4.172,4.172,0,0,1-2.394-1.206,3.825,3.825,0,0,1-2.771.774c-3.429-.46-2.333-3.267-2.2-3.55A3.721,3.721,0,0,1,3512.81,173.815Z" data-name="cloud" id="cloud"></path>
+                </g>
+                <g fill="#def8ff" transform="translate(3.585 1.325)" id="stars">
+                  <path transform="matrix(-1, 0.017, -0.017, -1, 24.231, 3.055)" d="M.774,0,.566.559,0,.539.458.933.25,1.492l.485-.361.458.394L1.024.953,1.509.592.943.572Z"></path>
+                  <path transform="matrix(-0.777, 0.629, -0.629, -0.777, 23.185, 12.358)" d="M1.341.529.836.472.736,0,.505.46,0,.4.4.729l-.231.46L.605.932l.4.326L.9.786Z" data-name="star"></path>
+                  <path transform="matrix(0.438, 0.899, -0.899, 0.438, 23.177, 29.735)" d="M.015,1.065.475.9l.285.365L.766.772l.46-.164L.745.494.751,0,.481.407,0,.293.285.658Z" data-name="star"></path>
+                  <path transform="translate(12.677 0.388) rotate(104)" d="M1.161,1.6,1.059,1,1.574.722.962.607.86,0,.613.572,0,.457.446.881.2,1.454l.516-.274Z" data-name="star"></path>
+                  <path transform="matrix(-0.07, 0.998, -0.998, -0.07, 11.066, 15.457)" d="M.873,1.648l.114-.62L1.579.945,1.03.62,1.144,0,.706.464.157.139.438.7,0,1.167l.592-.083Z" data-name="star"></path>
+                  <path transform="translate(8.326 28.061) rotate(11)" d="M.593,0,.638.724,0,.982l.7.211.045.724.36-.64.7.211L1.342.935,1.7.294,1.063.552Z" data-name="star"></path>
+                  <path transform="translate(5.012 5.962) rotate(172)" d="M.816,0,.5.455,0,.311.323.767l-.312.455.516-.215.323.456L.827.911,1.343.7.839.552Z" data-name="star"></path>
+                  <path transform="translate(2.218 14.616) rotate(169)" d="M1.261,0,.774.571.114.3.487.967,0,1.538.728,1.32l.372.662.047-.749.728-.218L1.215.749Z" data-name="star"></path>
+                </g>
+              </g>
+            </svg>
+          </label>
+        </div>
         <!-- Hackathon Round Badge -->
         <span
           class="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-neon/10 border border-neon/25 text-neon hero-badge">
@@ -716,10 +827,10 @@
           CodeVortex Hackathon 2026
         </span>
         <!-- Login Button -->
-        <button onclick="openLoginPanel()"
+        <a href="login.html"
           class="btn-neon text-xs md:text-sm py-1.5 px-4 rounded-lg flex items-center gap-2 cursor-pointer">
           Login <i class="fa-solid fa-right-to-bracket text-xs"></i>
-        </button>
+        </a>
       </div>
     </div>
   </header>
@@ -1334,371 +1445,14 @@ def calculate_average(numbers):
     })();
   </script>
 
-  <!-- Theme switcher functions -->
   <script>
-    function applyLightTheme() {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-      updateThemeIcon(false);
-    }
-
-    function applyDarkTheme() {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-      updateThemeIcon(true);
-    }
-
-    function toggleDarkMode() {
-      const isDark = document.documentElement.classList.contains('dark');
-      if (isDark) {
-        applyLightTheme();
-      } else {
-        applyDarkTheme();
-      }
-      const langSelect = document.getElementById('lang-select');
-      if (langSelect && typeof updateLangBadge === 'function') {
-        updateLangBadge(langSelect.value);
-      }
-    }
-
-    function updateThemeIcon(isDark) {
-      const icon = document.getElementById('theme-toggle-icon');
-      if (icon) {
-        icon.className = isDark ? 'fa-solid fa-sun text-xs' : 'fa-solid fa-moon text-xs';
-      }
-    }
-
-    // Initialize theme icon on load
-    window.addEventListener('DOMContentLoaded', () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      updateThemeIcon(isDark);
-    });
-  </script>
-  <!-- Login/Signup Sliding Drawer -->
-  <div id="login-drawer-overlay" onclick="closeLoginPanel()" class="fixed inset-0 z-40 bg-slate-950/40 dark:bg-slate-950/70 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300"></div>
-  
-  <div id="login-drawer" class="fixed right-0 top-0 bottom-0 z-50 h-full w-full max-w-md bg-white dark:bg-slate-950 border-l border-slate-200/50 dark:border-white/10 p-8 flex flex-col justify-between shadow-2xl translate-x-full transition-transform duration-300 ease-in-out text-slate-800 dark:text-slate-200 backdrop-blur-xl">
-    <!-- Gradient accent bar -->
-    <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-neon via-purple-glow to-transparent opacity-80 pointer-events-none"></div>
-    
-    <!-- Ambient glowing blob -->
-    <div class="absolute -bottom-16 -right-16 w-36 h-36 rounded-full bg-neon/10 dark:bg-neon/5 blur-2xl pointer-events-none"></div>
-
-    <div class="space-y-6 flex-1 flex flex-col justify-start relative z-10">
-      <!-- Top header row -->
-      <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-white/10 pb-5">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-neon/10 dark:bg-neon/20 flex items-center justify-center text-neon border border-neon/25 shadow-sm">
-            <i class="fa-solid fa-user-shield text-sm"></i>
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white tracking-tight">
-              Welcome to <span class="font-mono text-slate-950 dark:text-white font-extrabold tracking-wide">Ethrix<span class="text-neon">Forge</span></span>
-            </h3>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">Secure AI Developer Portal</p>
-          </div>
-        </div>
-        <button onclick="closeLoginPanel()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer">
-          <i class="fa-solid fa-xmark text-md"></i>
-        </button>
-      </div>
-
-      <!-- Tab selection buttons -->
-      <div class="flex rounded-xl bg-slate-100/80 dark:bg-slate-900/60 p-1 border border-slate-200/50 dark:border-white/5 shadow-inner">
-        <button id="tab-login" onclick="setDrawerTab('login')" class="flex-1 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-r from-neon to-purple-glow text-white shadow-sm transition-all cursor-pointer">Login</button>
-        <button id="tab-signup" onclick="setDrawerTab('signup')" class="flex-1 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer">Sign Up</button>
-      </div>
-
-      <!-- Dynamic Form Area -->
-      <div id="form-container" class="space-y-4 flex-grow text-slate-700 dark:text-slate-200">
-        <!-- Login Form -->
-        <div id="form-login" class="space-y-4">
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Email Address</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-envelope text-xs"></i>
-              </div>
-              <input id="login-email" type="email" placeholder="you@example.com"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Password</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-lock text-xs"></i>
-              </div>
-              <input id="login-password" type="password" placeholder="••••••••"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
-            </div>
-          </div>
-          <button onclick="submitLogin()" class="w-full py-3 px-4 bg-gradient-to-r from-neon to-purple-glow hover:from-neon/90 hover:to-purple-glow/90 text-white font-bold rounded-xl shadow-[0_4px_20px_rgba(109,40,217,0.25)] hover:shadow-[0_6px_24px_rgba(109,40,217,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer mt-2 text-xs">
-            Login <i class="fa-solid fa-right-from-bracket"></i>
-          </button>
-        </div>
-
-        <!-- Signup Form -->
-        <div id="form-signup" class="hidden space-y-4">
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Full Name</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-user text-xs"></i>
-              </div>
-              <input id="signup-name" type="text" placeholder="John Doe"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Email Address</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-envelope text-xs"></i>
-              </div>
-              <input id="signup-email" type="email" placeholder="you@example.com"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
-            </div>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Password</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-lock text-xs"></i>
-              </div>
-              <input id="signup-password" type="password" placeholder="Create a password"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
-            </div>
-          </div>
-          <button onclick="submitSignup()" class="w-full py-3 px-4 bg-gradient-to-r from-neon to-purple-glow hover:from-neon/90 hover:to-purple-glow/90 text-white font-bold rounded-xl shadow-[0_4px_20px_rgba(109,40,217,0.25)] hover:shadow-[0_6px_24px_rgba(109,40,217,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer mt-2 text-xs">
-            Create Account <i class="fa-solid fa-user-plus"></i>
-          </button>
-        </div>
-
-        <!-- Verification Form -->
-        <div id="form-verify" class="hidden space-y-5">
-          <div class="text-center py-3 px-2 bg-slate-50 dark:bg-slate-900/30 border border-slate-200/50 dark:border-white/5 rounded-2xl">
-            <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 dark:text-amber-400 flex items-center justify-center mx-auto mb-2.5">
-              <i class="fa-solid fa-paper-plane text-xs animate-pulse"></i>
-            </div>
-            <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
-              We've sent a 6-digit verification code to
-            </p>
-            <p id="verify-email-display" class="font-bold text-slate-950 dark:text-white text-xs truncate mt-0.5 px-2"></p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-mono">Check your inbox or spam folder.</p>
-          </div>
-          <div class="space-y-1.5">
-            <label class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono text-center">6-Digit Verification Code</label>
-            <div class="relative group">
-              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
-                <i class="fa-solid fa-key text-xs"></i>
-              </div>
-              <input id="verify-code" type="text" maxlength="6" placeholder="000000"
-                class="w-full bg-slate-50/55 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-center text-lg tracking-[0.3em] pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-mono font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700">
-            </div>
-          </div>
-          <button onclick="submitVerification()" class="w-full py-3 px-4 bg-gradient-to-r from-neon to-purple-glow hover:from-neon/90 hover:to-purple-glow/90 text-white font-bold rounded-xl shadow-[0_4px_20px_rgba(109,40,217,0.25)] hover:shadow-[0_6px_24px_rgba(109,40,217,0.35)] hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-xs">
-            Verify Code <i class="fa-solid fa-circle-check"></i>
-          </button>
-          <div class="text-center mt-3 pt-2 border-t border-slate-100 dark:border-white/5">
-            <button onclick="resendVerifyCode()" class="text-[11px] font-semibold text-neon hover:text-purple-glow hover:underline bg-transparent border-none outline-none cursor-pointer flex items-center justify-center gap-1 mx-auto transition-colors">
-              <i class="fa-solid fa-rotate-right text-[10px]"></i> Didn't receive code? Resend
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // ── Login / Signup Drawer Controls ───────────
-    function openLoginPanel() {
-      const overlay = document.getElementById('login-drawer-overlay');
-      const drawer = document.getElementById('login-drawer');
-      if (overlay && drawer) {
-        overlay.classList.remove('pointer-events-none');
-        overlay.classList.add('opacity-100');
-        drawer.classList.remove('translate-x-full');
-        drawer.classList.add('translate-x-0');
-      }
-    }
-
-    function closeLoginPanel() {
-      const overlay = document.getElementById('login-drawer-overlay');
-      const drawer = document.getElementById('login-drawer');
-      if (overlay && drawer) {
-        overlay.classList.add('pointer-events-none');
-        overlay.classList.remove('opacity-100');
-        drawer.classList.add('translate-x-full');
-        drawer.classList.remove('translate-x-0');
-        
-        // Reset tab to login after transition completes
-        setTimeout(() => {
-          setDrawerTab('login');
-        }, 300);
-      }
-    }
-
-    function setDrawerTab(tab) {
-      const tabLogin = document.getElementById('tab-login');
-      const tabSignup = document.getElementById('tab-signup');
-      const formLogin = document.getElementById('form-login');
-      const formSignup = document.getElementById('form-signup');
-      const formVerify = document.getElementById('form-verify');
-      
-      // Ensure verification form is hidden if user manually switches tabs
-      if (formVerify) formVerify.classList.add('hidden');
-      
-      if (tab === 'login') {
-        tabLogin.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-r from-neon to-purple-glow text-white shadow-sm transition-all cursor-pointer";
-        tabSignup.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer";
-        formLogin.classList.remove('hidden');
-        formSignup.classList.add('hidden');
-      } else {
-        tabSignup.className = "flex-1 py-2.5 text-xs font-bold rounded-lg bg-gradient-to-r from-neon to-purple-glow text-white shadow-sm transition-all cursor-pointer";
-        tabLogin.className = "flex-1 py-2.5 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer";
-        formSignup.classList.remove('hidden');
-        formLogin.classList.add('hidden');
-      }
-    }
-
-    let pendingVerifyEmail = '';
-
-    function showVerificationScreen(email) {
-      pendingVerifyEmail = email;
-      document.getElementById('verify-email-display').textContent = email;
-      
-      // Hide login and signup forms
-      document.getElementById('form-login').classList.add('hidden');
-      document.getElementById('form-signup').classList.add('hidden');
-      
-      // Show verify form
-      document.getElementById('form-verify').classList.remove('hidden');
-      
-      // Clear code input
-      document.getElementById('verify-code').value = '';
-    }
-
-    async function submitLogin() {
-      const email = document.getElementById('login-email')?.value.trim();
-      const password = document.getElementById('login-password')?.value;
-      if (!email || !password) {
-        alert('Please fill out all fields!');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${getBackendUrl()}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          localStorage.setItem('profile_name', data.name);
-          localStorage.setItem('profile_email', data.email);
-          window.location.href = "dashboard/index.html";
-        } else {
-          const errorData = await response.json();
-          if (errorData.detail === 'unverified') {
-            showVerificationScreen(email);
-          } else {
-            alert(errorData.detail || 'Login failed. Please check your credentials.');
-          }
-        }
-      } catch (err) {
-        console.error('Login error:', err);
-        alert('Error connecting to authentication server. Please verify the backend is running.');
-      }
-    }
-
-    async function submitSignup() {
-      const name = document.getElementById('signup-name')?.value.trim();
-      const email = document.getElementById('signup-email')?.value.trim();
-      const password = document.getElementById('signup-password')?.value;
-      
-      if (!name || !email || !password) {
-        alert('Please fill out all fields!');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${getBackendUrl()}/auth/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password })
-        });
-        
-        if (response.ok) {
-          showVerificationScreen(email);
-        } else {
-          const errorData = await response.json();
-          alert(errorData.detail || 'Registration failed.');
-        }
-      } catch (err) {
-        console.error('Signup error:', err);
-        alert('Error connecting to authentication server. Please verify the backend is running.');
-      }
-    }
-
-    async function submitVerification() {
-      const code = document.getElementById('verify-code')?.value.trim();
-      if (!code || code.length !== 6) {
-        alert('Please enter a 6-digit code!');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`${getBackendUrl()}/auth/verify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: pendingVerifyEmail, code })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          localStorage.setItem('profile_name', data.name);
-          localStorage.setItem('profile_email', data.email);
-          alert('Email verified successfully!');
-          window.location.href = "dashboard/index.html";
-        } else {
-          const errorData = await response.json();
-          alert(errorData.detail || 'Verification failed. Please try again.');
-        }
-      } catch (err) {
-        console.error('Verification error:', err);
-        alert('Error connecting to authentication server.');
-      }
-    }
-
-    async function resendVerifyCode() {
-      try {
-        const response = await fetch(`${getBackendUrl()}/auth/resend`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: pendingVerifyEmail })
-        });
-        
-        if (response.ok) {
-          alert('A new verification code has been sent to your email.');
-        } else {
-          const errorData = await response.json();
-          alert(errorData.detail || 'Failed to resend code.');
-        }
-      } catch (err) {
-        console.error('Resend error:', err);
-        alert('Error connecting to server.');
-      }
-    }
-
     function handleOpenDashboard(e) {
       if (e) e.preventDefault();
       const isLoggedIn = localStorage.getItem('profile_name');
       if (isLoggedIn) {
         window.location.href = "dashboard/index.html";
       } else {
-        openLoginPanel();
+        window.location.href = "login.html";
       }
     }
   </script>

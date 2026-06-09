@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <script>
+    (function () {
+      const theme = localStorage.getItem('theme') || 'dark';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Ethrix Forge</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <meta name="description" content="Sign in or register to access the Ethrix Forge AI developer dashboard." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet" href="css/all.min.css" />
+
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'space': 'rgb(var(--background-rgb))',
+            'space-light': 'rgb(var(--muted-rgb))',
+            'space-card': 'rgb(var(--card-rgb))',
+            'neon': 'rgb(var(--primary-rgb))',
+            'neon-dim': 'rgb(var(--ring-rgb))',
+            'neon-glow': 'rgb(var(--accent-rgb))',
+            'neon-border': 'rgb(var(--border-rgb))',
+            'purple-glow': 'rgb(var(--chart-3-rgb))',
+            background: 'rgb(var(--background-rgb))',
+            foreground: 'rgb(var(--foreground-rgb))',
+            card: 'rgb(var(--card-rgb))',
+            border: 'rgb(var(--border-rgb))',
+            primary: 'rgb(var(--primary-rgb))',
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            display: ['Space Grotesk', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* RGB variables for theme support */
+    :root {
+      --background-rgb: 245, 247, 251;
+      --foreground-rgb: 15, 23, 42;
+      --card-rgb: 255, 255, 255;
+      --border-rgb: 226, 232, 240;
+      --primary-rgb: 37, 99, 235;
+      --muted-rgb: 248, 250, 252;
+      --accent-rgb: 239, 246, 255;
+      --ring-rgb: 59, 130, 246;
+      --chart-3-rgb: 99, 102, 241;
+    }
+
+    .dark {
+      --background-rgb: 8, 8, 15;
+      --foreground-rgb: 248, 250, 252;
+      --card-rgb: 15, 23, 42;
+      --border-rgb: 30, 41, 59;
+      --primary-rgb: 139, 92, 246;
+      --muted-rgb: 30, 41, 59;
+      --accent-rgb: 46, 16, 101;
+      --ring-rgb: 124, 58, 237;
+      --chart-3-rgb: 192, 132, 252;
+    }
+
+    html,
+    body {
+      overflow: hidden;
+      height: 100%;
+    }
+
+    body {
+      background-color: rgb(var(--background-rgb));
+      color: rgb(var(--foreground-rgb));
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .btn-solid {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.95), rgba(var(--chart-3-rgb), 0.95));
+      color: white;
+      transition: all 0.25s ease-in-out;
+      box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.15);
+    }
+
+    .btn-solid:hover {
+      box-shadow: 0 14px 28px rgba(var(--primary-rgb), 0.25);
+      transform: translateY(-1px);
+    }
+
+    /* Soft transition animations for forms */
+    .form-transition {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .form-hidden {
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      display: none !important;
+    }
+
+    /* Active indicator for tab buttons */
+    .tab-active {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.95), rgba(var(--chart-3-rgb), 0.95));
+      color: white;
+      box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.12);
+    }
+
+    /* Theme Toggle Switch */
+    #theme-toggle-button {
+      font-size: 11px;
+      position: relative;
+      display: inline-block;
+      width: 7em;
+      cursor: pointer;
+    }
+
+    #toggle {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    #container,
+    #patches,
+    #stars,
+    #button,
+    #sun,
+    #moon,
+    #cloud {
+      transition-property: all;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 0.25s;
+    }
+
+    #toggle:checked+svg #container {
+      fill: #2b4360;
+    }
+
+    #toggle:checked+svg #button {
+      transform: translate(28px, 2.333px);
+    }
+
+    #sun {
+      opacity: 1;
+    }
+
+    #toggle:checked+svg #sun {
+      opacity: 0;
+    }
+
+    #moon {
+      opacity: 0;
+    }
+
+    #toggle:checked+svg #moon {
+      opacity: 1;
+    }
+
+    #cloud {
+      opacity: 1;
+    }
+
+    #toggle:checked+svg #cloud {
+      opacity: 0;
+    }
+
+    #stars {
+      opacity: 0;
+    }
+
+    #toggle:checked+svg #stars {
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body
+  class="h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-indigo-950/20 p-4 relative overflow-hidden">
+
+  <!-- Top Navigation Bar (Ensures same-line horizontal alignment) -->
+  <header class="fixed top-4 left-4 right-4 h-12 flex items-center justify-between z-50 pointer-events-none">
+    <!-- Back to Landing Page Option -->
+    <a href="index.html"
+      class="pointer-events-auto py-2 px-3.5 rounded-full border border-slate-200/80 dark:border-white/5 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all shadow-md backdrop-blur-md flex items-center justify-center gap-2 text-xs font-bold font-mono"
+      title="Back to Landing Page">
+      <i class="fa-solid fa-arrow-left-long"></i> Back to Home
+    </a>
+
+    <!-- Theme Toggle -->
+    <div class="pointer-events-auto flex items-center justify-center">
+      <label id="theme-toggle-button">
+        <input type="checkbox" id="toggle" onchange="toggleDarkMode()">
+        <svg viewBox="0 0 69.667 44" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg"
+          class="w-[70px] h-[44px]">
+          <g transform="translate(3.5 3.5)" data-name="Component 15 – 1" id="Component_15_1">
+            <g filter="url(#container)" transform="matrix(1, 0, 0, 1, -3.5, -3.5)">
+              <rect fill="#83cbd8" transform="translate(3.5 3.5)" rx="17.5" height="35" width="60.667"
+                data-name="container" id="container"></rect>
+            </g>
+            <g transform="translate(2.333 2.333)" id="button">
+              <g data-name="sun" id="sun">
+                <g filter="url(#sun-outer)" transform="matrix(1, 0, 0, 1, -5.83, -5.83)">
+                  <circle fill="#f8e664" transform="translate(5.83 5.83)" r="15.167" cy="15.167" cx="15.167"
+                    data-name="sun-outer" id="sun-outer-2"></circle>
+                </g>
+                <g filter="url(#sun)" transform="matrix(1, 0, 0, 1, -5.83, -5.83)">
+                  <path fill="rgba(246,254,247,0.29)" transform="translate(9.33 9.33)"
+                    d="M11.667,0A11.667,11.667,0,1,1,0,11.667,11.667,11.667,0,0,1,11.667,0Z" data-name="sun" id="sun-3">
+                  </path>
+                </g>
+                <circle fill="#fcf4b9" transform="translate(8.167 8.167)" r="7" cy="7" cx="7" id="sun-inner"></circle>
+              </g>
+              <g data-name="moon" id="moon">
+                <g filter="url(#moon)" transform="matrix(1, 0, 0, 1, -31.5, -5.83)">
+                  <circle fill="#cce6ee" transform="translate(31.5 5.83)" r="15.167" cy="15.167" cx="15.167"
+                    data-name="moon" id="moon-3"></circle>
+                </g>
+                <g fill="#a6cad0" transform="translate(-24.415 -1.009)" id="patches">
+                  <circle transform="translate(43.009 4.496)" r="2" cy="2" cx="2"></circle>
+                  <circle transform="translate(39.366 17.952)" r="2" cy="2" cx="2" data-name="patch"></circle>
+                  <circle transform="translate(33.016 8.044)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                  <circle transform="translate(51.081 18.888)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                  <circle transform="translate(33.016 22.503)" r="1" cy="1" cx="1" data-name="patch"></circle>
+                  <circle transform="translate(50.081 10.53)" r="1.5" cy="1.5" cx="1.5" data-name="patch"></circle>
+                </g>
+              </g>
+            </g>
+            <g filter="url(#cloud)" transform="matrix(1, 0, 0, 1, -3.5, -3.5)">
+              <path fill="#fff" transform="translate(-3466.47 -160.94)"
+                d="M3512.81,173.815a4.463,4.463,0,0,1,2.243.62.95.95,0,0,1,.72-1.281,4.852,4.852,0,0,1,2.623.519c.034.02-.5-1.968.281-2.716a2.117,2.117,0,0,1,2.829-.274,1.821,1.821,0,0,1,.854,1.858c.063.037,2.594-.049,3.285,1.273s-.865,2.544-.807,2.626a12.192,12.192,0,0,1,2.278.892c.553.448,1.106,1.992-1.62,2.927a7.742,7.742,0,0,1-3.762-.3c-1.28-.49-1.181-2.65-1.137-2.624s-1.417,2.2-2.623,2.2a4.172,4.172,0,0,1-2.394-1.206,3.825,3.825,0,0,1-2.771.774c-3.429-.46-2.333-3.267-2.2-3.55A3.721,3.721,0,0,1,3512.81,173.815Z"
+                data-name="cloud" id="cloud"></path>
+            </g>
+            <g fill="#def8ff" transform="translate(3.585 1.325)" id="stars">
+              <path transform="matrix(-1, 0.017, -0.017, -1, 24.231, 3.055)"
+                d="M.774,0,.566.559,0,.539.458.933.25,1.492l.485-.361.458.394L1.024.953,1.509.592.943.572Z"></path>
+              <path transform="matrix(-0.777, 0.629, -0.629, -0.777, 23.185, 12.358)"
+                d="M1.341.529.836.472.736,0,.505.46,0,.4.4.729l-.231.46L.605.932l.4.326L.9.786Z" data-name="star">
+              </path>
+              <path transform="matrix(0.438, 0.899, -0.899, 0.438, 23.177, 29.735)"
+                d="M.015,1.065.475.9l.285.365L.766.772l.46-.164L.745.494.751,0,.481.407,0,.293.285.658Z"
+                data-name="star"></path>
+              <path transform="translate(12.677 0.388) rotate(104)"
+                d="M1.161,1.6,1.059,1,1.574.722.962.607.86,0,.613.572,0,.457.446.881.2,1.454l.516-.274Z"
+                data-name="star"></path>
+              <path transform="matrix(-0.07, 0.998, -0.998, -0.07, 11.066, 15.457)"
+                d="M.873,1.648l.114-.62L1.579.945,1.03.62,1.144,0,.706.464.157.139.438.7,0,1.167l.592-.083Z"
+                data-name="star"></path>
+              <path transform="translate(8.326 28.061) rotate(11)"
+                d="M.593,0,.638.724,0,.982l.7.211.045.724.36-.64.7.211L1.342.935,1.7.294,1.063.552Z" data-name="star">
+              </path>
+              <path transform="translate(5.012 5.962) rotate(172)"
+                d="M.816,0,.5.455,0,.311.323.767l-.312.455.516-.215.323.456L.827.911,1.343.7.839.552Z" data-name="star">
+              </path>
+              <path transform="translate(2.218 14.616) rotate(169)"
+                d="M1.261,0,.774.571.114.3.487.967,0,1.538.728,1.32l.372.662.047-.749.728-.218L1.215.749Z"
+                data-name="star"></path>
+            </g>
+          </g>
+        </svg>
+      </label>
+    </div>
+  </header>
+
+  <!-- Main Security Card Container -->
+  <div
+    class="w-full max-w-4xl min-h-[600px] overflow-hidden rounded-2xl flex bg-white dark:bg-slate-900 shadow-2xl border border-slate-100 dark:border-white/5 transition-all duration-300 relative z-10">
+
+    <!-- LEFT SIDE: Wallpaper Cover with Ambient Map Overlay (Visible on md+) -->
+    <div class="hidden md:block w-1/2 relative overflow-hidden border-r border-slate-100 dark:border-white/5">
+      <!-- Full Cover Wallpaper Image -->
+      <img src="wallpaper.png" class="absolute inset-0 w-full h-full object-cover"
+        alt="Ethrix Forge Studio Wallpaper" />
+
+      <!-- Gradient Overlay to ensure text readability -->
+      <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-transparent z-10"></div>
+
+
+      <!-- Brand Content Overlay at the bottom -->
+      <div class="absolute inset-x-0 bottom-0 p-8 z-30 flex flex-col justify-end">
+        <div class="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-4 shadow-2xl">
+          <h3 class="text-lg font-bold font-display text-white tracking-tight flex items-center gap-2">
+            <img src="logo.png" class="h-6 w-auto object-contain rounded bg-white/10 p-0.5" alt="Ethrix Forge Logo" />
+            Ethrix Forge
+          </h3>
+          <p class="text-xs text-slate-300 font-mono mt-1.5">AI-Powered Code Reviewer</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE: Authentication Panel (Login, Signup, Verify) -->
+    <div
+      class="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-white dark:bg-slate-900 transition-colors duration-300 relative">
+
+      <!-- Top Tabs (Hidden on Verification View) -->
+      <div id="auth-tabs-wrap"
+        class="flex rounded-xl bg-slate-100/80 dark:bg-slate-900/60 p-1 border border-slate-200/50 dark:border-white/5 shadow-inner mb-6">
+        <button id="tab-login" onclick="setAuthTab('login')"
+          class="flex-1 py-2 text-xs font-bold rounded-lg tab-active transition-all cursor-pointer">Login</button>
+        <button id="tab-signup" onclick="setAuthTab('signup')"
+          class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer">Sign
+          Up</button>
+      </div>
+
+      <!-- FORMS CONTAINER -->
+      <div id="forms-wrapper" class="relative min-h-[340px]">
+
+        <!-- 1. LOGIN VIEW -->
+        <div id="form-login" class="form-transition space-y-5">
+          <div class="mb-4">
+            <h1 class="text-2xl font-bold font-display text-slate-800 dark:text-white tracking-tight">Welcome back</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Sign in to your Ethrix developer session</p>
+          </div>
+
+          <!-- Google Login (Mock) -->
+          <button onclick="mockGoogleLogin()"
+            class="w-full flex items-center justify-center gap-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-xl p-3 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-sm transition-all cursor-pointer">
+            <svg class="h-5 w-5" viewBox="0 0 24 24">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            <span>Login with Google</span>
+          </button>
+
+          <!-- Divider -->
+          <div class="relative my-4 flex items-center">
+            <div class="flex-grow border-t border-slate-200/80 dark:border-white/5"></div>
+            <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase tracking-widest font-mono">or</span>
+            <div class="flex-grow border-t border-slate-200/80 dark:border-white/5"></div>
+          </div>
+
+          <!-- Email Input -->
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Email
+              Address</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-envelope text-xs"></i>
+              </div>
+              <input id="login-email" type="email" placeholder="you@gmail.com"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Password</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-lock text-xs"></i>
+              </div>
+              <input id="login-password" type="password" placeholder="••••••••"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-10 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
+              <button onclick="togglePasswordVisibility('login-password', this)"
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button onclick="submitLogin()"
+            class="btn-solid w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer font-bold text-xs">
+            Sign In <i class="fa-solid fa-arrow-right text-xs"></i>
+          </button>
+
+          <div class="text-center pt-2">
+            <a href="#" onclick="alert('Forgot password? Please contact system administrator.')"
+              class="text-xs text-slate-500 dark:text-slate-400 hover:text-neon dark:hover:text-neon transition-colors font-semibold">
+              Forgot password?
+            </a>
+          </div>
+        </div>
+
+        <!-- 2. SIGNUP VIEW -->
+        <div id="form-signup" class="form-transition form-hidden space-y-4">
+          <div class="mb-3">
+            <h1 class="text-2xl font-bold font-display text-slate-800 dark:text-white tracking-tight">Create Account
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Register your developer profile</p>
+          </div>
+
+          <!-- Google Signup (Mock) -->
+          <button onclick="mockGoogleLogin()"
+            class="w-full flex items-center justify-center gap-2.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 rounded-xl p-3 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold shadow-sm transition-all cursor-pointer">
+            <svg class="h-5 w-5" viewBox="0 0 24 24">
+              <path fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+
+          <!-- Divider -->
+          <div class="relative my-4 flex items-center">
+            <div class="flex-grow border-t border-slate-200/80 dark:border-white/5"></div>
+            <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase tracking-widest font-mono">or</span>
+            <div class="flex-grow border-t border-slate-200/80 dark:border-white/5"></div>
+          </div>
+
+          <!-- Full Name -->
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Full
+              Name</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-user text-xs"></i>
+              </div>
+              <input id="signup-name" type="text" placeholder="Ethrix Forge"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
+            </div>
+          </div>
+
+          <!-- Email Address -->
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Email
+              Address</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-envelope text-xs"></i>
+              </div>
+              <input id="signup-email" type="email" placeholder="you@gmail.com"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono">Password</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-lock text-xs"></i>
+              </div>
+              <input id="signup-password" type="password" placeholder="Create a password"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-xs pl-10 pr-10 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600">
+              <button onclick="togglePasswordVisibility('signup-password', this)"
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                <i class="fa-solid fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button onclick="submitSignup()"
+            class="btn-solid w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer font-bold text-xs">
+            Create Account <i class="fa-solid fa-user-plus text-xs"></i>
+          </button>
+        </div>
+
+        <!-- 3. VERIFICATION VIEW -->
+        <div id="form-verify" class="form-transition form-hidden space-y-5">
+          <div
+            class="text-center py-4 px-3 bg-slate-50 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/5 rounded-2xl">
+            <div
+              class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 dark:text-amber-400 flex items-center justify-center mx-auto mb-2.5">
+              <i class="fa-solid fa-paper-plane text-xs animate-bounce"></i>
+            </div>
+            <p class="text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-semibold">
+              We've sent a 6-digit verification code to
+            </p>
+            <p id="verify-email-display" class="font-bold text-slate-950 dark:text-white text-xs truncate mt-0.5 px-2">
+            </p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 font-mono">Check your inbox or spam folder.
+            </p>
+          </div>
+
+          <div class="space-y-1.5">
+            <label
+              class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest block font-mono text-center">6-Digit
+              Verification Code</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-neon transition-colors">
+                <i class="fa-solid fa-key text-xs"></i>
+              </div>
+              <input id="verify-code" type="text" maxlength="6" placeholder="000000"
+                class="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800/80 rounded-xl text-slate-900 dark:text-white text-center text-lg tracking-[0.3em] pl-10 pr-4 py-3 outline-none focus:ring-2 focus:ring-neon/20 focus:border-neon dark:focus:ring-neon/30 dark:focus:border-neon transition-all font-mono font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700">
+            </div>
+          </div>
+
+          <button onclick="submitVerification()"
+            class="btn-solid w-full py-3 px-4 rounded-xl flex items-center justify-center gap-2 cursor-pointer font-bold text-xs">
+            Verify Code <i class="fa-solid fa-circle-check text-xs"></i>
+          </button>
+
+          <div class="text-center mt-3 pt-2 border-t border-slate-100 dark:border-white/5">
+            <button onclick="resendVerifyCode()"
+              class="text-[11px] font-semibold text-neon hover:text-purple-glow hover:underline bg-transparent border-none outline-none cursor-pointer flex items-center justify-center gap-1.5 mx-auto transition-colors">
+              <i class="fa-solid fa-rotate-right text-[10px]"></i> Didn't receive code? Resend
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Javascript Logic -->
+  <script>
+    // ── Get Backend URL Endpoint Helper ──────────
+    function getBackendUrl() {
+      const url = localStorage.getItem('backend_url');
+      if (url) return url.replace(/\/$/, '');
+
+      const hostname = window.location.hostname;
+      const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
+
+      return isLocal ? 'http://127.0.0.1:8000' : 'https://ethrix-forge.onrender.com';
+    }
+
+    // ── Toggle password visibility ────────────────
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash text-xs';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye text-xs';
+      }
+    }
+
+    // ── Tab Management ────────────────────────────
+    function setAuthTab(tab) {
+      const tabLogin = document.getElementById('tab-login');
+      const tabSignup = document.getElementById('tab-signup');
+      const formLogin = document.getElementById('form-login');
+      const formSignup = document.getElementById('form-signup');
+      const formVerify = document.getElementById('form-verify');
+
+      // Hide verification view
+      formVerify.classList.add('form-hidden');
+
+      if (tab === 'login') {
+        tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg tab-active transition-all cursor-pointer";
+        tabSignup.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer";
+
+        formLogin.classList.remove('form-hidden');
+        formSignup.classList.add('form-hidden');
+      } else {
+        tabSignup.className = "flex-1 py-2 text-xs font-bold rounded-lg tab-active transition-all cursor-pointer";
+        tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all cursor-pointer";
+
+        formSignup.classList.remove('form-hidden');
+        formLogin.classList.add('form-hidden');
+      }
+    }
+
+    // ── Show verification form view ───────────────
+    let pendingVerifyEmail = '';
+
+    function showVerificationScreen(email) {
+      pendingVerifyEmail = email;
+      document.getElementById('verify-email-display').textContent = email;
+
+      // Hide tabs wrapper
+      document.getElementById('auth-tabs-wrap').classList.add('hidden');
+
+      // Hide login and signup forms
+      document.getElementById('form-login').classList.add('form-hidden');
+      document.getElementById('form-signup').classList.add('form-hidden');
+
+      // Show verify form
+      document.getElementById('form-verify').classList.remove('form-hidden');
+
+      // Clear code input
+      document.getElementById('verify-code').value = '';
+    }
+
+    // ── API Submission Handlers ───────────────────
+    async function submitLogin() {
+      const email = document.getElementById('login-email')?.value.trim();
+      const password = document.getElementById('login-password')?.value;
+      if (!email || !password) {
+        alert('Please fill out all fields!');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('profile_name', data.name);
+          localStorage.setItem('profile_email', data.email);
+          window.location.href = "dashboard/index.html";
+        } else {
+          const errorData = await response.json();
+          if (errorData.detail === 'unverified') {
+            showVerificationScreen(email);
+          } else {
+            alert(errorData.detail || 'Login failed. Please check your credentials.');
+          }
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Error connecting to authentication server. Please verify the backend is running.');
+      }
+    }
+
+    async function submitSignup() {
+      const name = document.getElementById('signup-name')?.value.trim();
+      const email = document.getElementById('signup-email')?.value.trim();
+      const password = document.getElementById('signup-password')?.value;
+
+      if (!name || !email || !password) {
+        alert('Please fill out all fields!');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        if (response.ok) {
+          showVerificationScreen(email);
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Registration failed.');
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        alert('Error connecting to authentication server. Please verify the backend is running.');
+      }
+    }
+
+    async function submitVerification() {
+      const code = document.getElementById('verify-code')?.value.trim();
+      if (!code || code.length !== 6) {
+        alert('Please enter a 6-digit code!');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail, code })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('profile_name', data.name);
+          localStorage.setItem('profile_email', data.email);
+          alert('Email verified successfully!');
+          window.location.href = "dashboard/index.html";
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Verification failed. Please try again.');
+        }
+      } catch (err) {
+        console.error('Verification error:', err);
+        alert('Error connecting to authentication server.');
+      }
+    }
+
+    async function resendVerifyCode() {
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/resend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail })
+        });
+
+        if (response.ok) {
+          alert('A new verification code has been sent to your email.');
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Failed to resend code.');
+        }
+      } catch (err) {
+        console.error('Resend error:', err);
+        alert('Error connecting to server.');
+      }
+    }
+
+    function mockGoogleLogin() {
+      alert("Google Login triggered (hackathon evaluation mockup).");
+    }
+
+    // ── Theme Switcher Functions ───────────────────
+    function applyLightTheme() {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      const checkbox = document.getElementById('toggle');
+      if (checkbox) checkbox.checked = false;
+    }
+
+    function applyDarkTheme() {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      const checkbox = document.getElementById('toggle');
+      if (checkbox) checkbox.checked = true;
+    }
+
+    function toggleDarkMode() {
+      const checkbox = document.getElementById('toggle');
+      if (checkbox && checkbox.checked) {
+        applyDarkTheme();
+      } else {
+        applyLightTheme();
+      }
+    }
+
+    // Initialize theme state on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      const checkbox = document.getElementById('toggle');
+      if (checkbox) checkbox.checked = isDark;
+    });
+
+    // Sync theme in real-time across open tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'theme') {
+        if (e.newValue === 'dark') {
+          applyDarkTheme();
+        } else {
+          applyLightTheme();
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

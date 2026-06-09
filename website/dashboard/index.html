@@ -2194,6 +2194,17 @@
       renderLineNumbers();
     });
 
+    // Sync theme in real-time across open tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'theme') {
+        if (e.newValue === 'dark') {
+          applyDarkTheme();
+        } else {
+          applyLightTheme();
+        }
+      }
+    });
+
     // ── Output Tab ──────────────────────────────────────
     let currentMarkdown = '';
     let outputTab = 'rendered';
