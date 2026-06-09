@@ -80,10 +80,18 @@ def ensure_server_running(url: str):
     console.print("[yellow]FastAPI backend is not running. Spinning it up automatically in the background...[/]")
 
     try:
+        # Determine the backend working directory
+        cli_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.abspath(os.path.join(cli_dir, "..", "backend"))
+        if not os.path.exists(os.path.join(backend_dir, "main.py")):
+            # Fallback to current script directory or workspace root
+            backend_dir = cli_dir
+
         subprocess.Popen(
             [sys.executable, "-m", "uvicorn", "main:app", "--port", str(port), "--host", "127.0.0.1"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            cwd=backend_dir,
             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         )
 
@@ -105,7 +113,7 @@ def ensure_server_running(url: str):
         sys.exit(1)
 
 
-CONFIG_FILE = ".ethrix_config.json"
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".ethrix_config.json")
 
 def load_config() -> dict:
     if os.path.exists(CONFIG_FILE):

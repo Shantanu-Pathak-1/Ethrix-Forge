@@ -11,7 +11,7 @@
       
       // Auth Guard: Redirect to landing page if not logged in
       if (!localStorage.getItem('profile_name')) {
-        window.location.replace('../ethrix-landing/index.html');
+        window.location.replace('../index.html');
       }
     })();
   </script>
@@ -26,7 +26,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700;800&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="../ethrix-landing/css/all.min.css" />
+  <link rel="stylesheet" href="../css/all.min.css" />
 
   <script>
     tailwind.config = {
@@ -1344,7 +1344,7 @@
       <!-- Brand -->
       <div class="flex items-center gap-3 border-b border-[var(--sidebar-border)] flex-shrink-0"
         style="padding: 16px; min-height: 65px;">
-        <a href="../ethrix-landing/index.html"
+        <a href="../index.html"
           class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 animate-pulse-neon"
           style="background: linear-gradient(135deg, #7c3aed, #3b82f6); box-shadow: 0 0 15px rgba(124, 58, 237, 0.4);">
           <i class="fa-solid fa-bolt text-white text-sm"></i>
@@ -1405,7 +1405,7 @@
         </button>
 
         <!-- Landing Page -->
-        <a href="../ethrix-landing/index.html" class="nav-item w-full" style="text-decoration:none;"
+        <a href="../index.html" class="nav-item w-full" style="text-decoration:none;"
           title="Landing Page">
           <div class="nav-icon">
             <i class="fa-solid fa-house text-[13px]"></i>
@@ -1845,12 +1845,21 @@
                   </p>
                 </div>
 
+                <div>
+                  <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Backend API URL</label>
+                  <input id="setting-backend-url" type="text" placeholder="http://127.0.0.1:8000"
+                    class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-700 dark:text-slate-300 text-xs px-3 py-2.5 outline-none focus:border-violet-500 font-mono transition-colors">
+                  <p class="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+                    Set this to your hosted backend URL (e.g., https://your-backend.onrender.com). Leave blank to use localhost.
+                  </p>
+                </div>
+
                 <div class="flex gap-3 pt-2">
-                  <button onclick="saveApiKey()" class="btn-primary flex-1 justify-center py-2.5">
-                    <i class="fa-solid fa-floppy-disk"></i> Save Key
+                  <button onclick="saveSettings()" class="btn-primary flex-1 justify-center py-2.5">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Settings
                   </button>
-                  <button onclick="removeApiKey()" class="btn-rose px-4 py-2.5" title="Clear saved key">
-                    <i class="fa-solid fa-trash-can"></i> Remove Key
+                  <button onclick="removeSettings()" class="btn-rose px-4 py-2.5" title="Clear saved settings">
+                    <i class="fa-solid fa-trash-can"></i> Clear Settings
                   </button>
                 </div>
 
@@ -1948,6 +1957,12 @@
     }
 
     // ── API & Model Settings Helpers ────────────────────
+    function getBackendUrl() {
+      const url = localStorage.getItem('backend_url');
+      if (url) return url.replace(/\/$/, '');
+      return 'http://127.0.0.1:8000';
+    }
+
     function getApiHeaders() {
       const headers = { 'Content-Type': 'application/json' };
       const savedKey = localStorage.getItem('groq_api_key');
@@ -1971,24 +1986,37 @@
       }
     }
 
-    function saveApiKey() {
+    function saveSettings() {
       const keyInput = document.getElementById('setting-api-key');
-      if (!keyInput) return;
-      const key = keyInput.value.trim();
-      if (!key) {
-        showToast('⚠️ Please enter a valid API key!');
-        return;
+      const urlInput = document.getElementById('setting-backend-url');
+      if (keyInput) {
+        const key = keyInput.value.trim();
+        if (key) {
+          localStorage.setItem('groq_api_key', key);
+        } else {
+          localStorage.removeItem('groq_api_key');
+        }
       }
-      localStorage.setItem('groq_api_key', key);
-      showToast('✓ Groq API Key saved successfully!');
+      if (urlInput) {
+        const url = urlInput.value.trim();
+        if (url) {
+          localStorage.setItem('backend_url', url);
+        } else {
+          localStorage.removeItem('backend_url');
+        }
+      }
+      showToast('✓ Settings saved successfully!');
       checkBackendHealth();
     }
 
-    function removeApiKey() {
+    function removeSettings() {
       const keyInput = document.getElementById('setting-api-key');
+      const urlInput = document.getElementById('setting-backend-url');
       if (keyInput) keyInput.value = '';
+      if (urlInput) urlInput.value = '';
       localStorage.removeItem('groq_api_key');
-      showToast('✓ Groq API Key removed.');
+      localStorage.removeItem('backend_url');
+      showToast('✓ Settings cleared.');
       checkBackendHealth();
     }
 
@@ -2115,6 +2143,13 @@
       const apiKeyInput = document.getElementById('setting-api-key');
       if (apiKeyInput && savedKey) {
         apiKeyInput.value = savedKey;
+      }
+
+      // Load saved Backend API URL
+      const savedUrl = localStorage.getItem('backend_url');
+      const urlInput = document.getElementById('setting-backend-url');
+      if (urlInput && savedUrl) {
+        urlInput.value = savedUrl;
       }
       
       // Load saved Model Variant
@@ -2258,7 +2293,7 @@
         const timeoutId = setTimeout(() => controller.abort(), 20000);
         const provider = document.getElementById('setting-provider')?.value || 'online';
         const model = document.getElementById('setting-model')?.value || '';
-        const res = await fetch(`http://127.0.0.1:8000/${action}`, {
+        const res = await fetch(`${getBackendUrl()}/${action}`, {
           method: 'POST', signal: controller.signal,
           headers: getApiHeaders(),
           body: JSON.stringify({ code, language: lang, provider, model })
@@ -2348,7 +2383,7 @@
         const savedKey = localStorage.getItem('groq_api_key');
         const headers = {};
         if (savedKey) headers['X-Groq-API-Key'] = savedKey;
-        const res = await fetch('http://127.0.0.1:8000/', { headers });
+        const res = await fetch(`${getBackendUrl()}/`, { headers });
         if (res.ok) {
           const data = await res.json();
           if (statusEl) statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>Online (Groq: ${data.groq_api_key})</span>`;
@@ -2422,7 +2457,7 @@
       try {
         const provider = 'online';
         const model = document.getElementById('setting-model-chat')?.value || 'llama-3.3-70b-versatile';
-        const res = await fetch('http://127.0.0.1:8000/chat', {
+        const res = await fetch(`${getBackendUrl()}/chat`, {
           method: 'POST', headers: getApiHeaders(),
           body: JSON.stringify({ message: apiMessage, history: chatHistory.slice(0, -1), provider, model })
         });
@@ -2465,7 +2500,7 @@
       const l = msg.toLowerCase();
       if (l.includes('hi') || l.includes('hello')) return "Hello! I'm Ethrix. The FastAPI backend server is unreachable — but the Code Studio static analysis still works!";
       if (l.includes('extension') || l.includes('vs code')) return "VS Code: select code → right-click → 'Ethrix: Optimize'.";
-      return "The connection to the Ethrix backend (http://127.0.0.1:8000/) failed. Please check if the backend service is running.";
+      return `The connection to the Ethrix backend (${getBackendUrl()}/) failed. Please check if the backend service is running.`;
     }
 
     function clearChat() {
@@ -2627,7 +2662,7 @@
       localStorage.removeItem('profile_name');
       localStorage.removeItem('profile_pic');
       setTimeout(() => {
-        window.location.href = '../ethrix-landing/index.html';
+        window.location.href = '../index.html';
       }, 1000);
     }
 

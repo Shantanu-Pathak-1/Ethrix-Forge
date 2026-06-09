@@ -6,6 +6,12 @@
 let currentMarkdown = '';
 let outputTab = 'rendered';
 
+function getBackendUrl() {
+  const url = localStorage.getItem('backend_url');
+  if (url) return url.replace(/\/$/, '');
+  return 'http://127.0.0.1:8000';
+}
+
 // ── Language badges & color schemes ───────────────
 const LANG_BADGES = {
   python: 'PY',
@@ -360,7 +366,7 @@ async function runAction(action) {
   const steps = {
     analyze: [
       ['CONNECTING...', 'Accessing EthrixForge analysis pipeline', 10],
-      ['UPLOADING CODE...', 'Sending code blocks to http://127.0.0.1:8000/analyze', 30],
+      ['UPLOADING CODE...', 'Sending code blocks to backend API server', 30],
       ['LINTING SCHEMAS...', 'Running static ast code reviews', 50],
       ['SECURITY AUDIT...', 'Scanning credentials, sql injections, dependencies', 70],
       ['COMPILING...', 'Assembling Markdown review summaries', 90]
@@ -399,7 +405,7 @@ async function runAction(action) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-    const url = `http://127.0.0.1:8000/${action}`;
+    const url = `${getBackendUrl()}/${action}`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {

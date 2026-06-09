@@ -1,2 +1,2 @@
 @echo off
-python "%~dp0ethrix.py" %*
+python "%~dp0cli\ethrix.py" %*

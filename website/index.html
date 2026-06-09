@@ -1555,7 +1555,7 @@ def calculate_average(numbers):
       const displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
       localStorage.setItem('profile_name', displayName || 'Developer Account');
       
-      window.location.href = "../dashboard/index.html";
+      window.location.href = "dashboard/index.html";
     }
 
     function submitSignup() {
@@ -1569,14 +1569,14 @@ def calculate_average(numbers):
       }
       
       localStorage.setItem('profile_name', name);
-      window.location.href = "../dashboard/index.html";
+      window.location.href = "dashboard/index.html";
     }
 
     function handleOpenDashboard(e) {
       if (e) e.preventDefault();
       const isLoggedIn = localStorage.getItem('profile_name');
       if (isLoggedIn) {
-        window.location.href = "../dashboard/index.html";
+        window.location.href = "dashboard/index.html";
       } else {
         openLoginPanel();
       }
