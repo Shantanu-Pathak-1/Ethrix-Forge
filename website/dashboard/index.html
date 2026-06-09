@@ -1912,6 +1912,12 @@
           <input id="profile-name-input" type="text" placeholder="Enter your name"
                  class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-700 dark:text-slate-300 text-xs px-3.5 py-2.5 outline-none focus:border-violet-500 transition-colors font-semibold">
         </div>
+        <!-- Email Display Section -->
+        <div class="space-y-1.5">
+          <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</label>
+          <input id="profile-email-input" type="text" readonly
+                 class="w-full bg-[var(--muted)] border border-[var(--border)] rounded-xl text-slate-400 text-xs px-3.5 py-2.5 outline-none font-semibold cursor-not-allowed opacity-70">
+        </div>
       </div>
 
       <div class="flex items-center justify-between gap-3 pt-3 border-t border-[var(--border)]">
@@ -2532,9 +2538,12 @@
       const modal = document.getElementById('profile-modal');
       const card = document.getElementById('profile-modal-card');
       const nameInput = document.getElementById('profile-name-input');
+      const emailInput = document.getElementById('profile-email-input');
       const currentName = localStorage.getItem('profile_name') || 'Team Titans 4';
+      const currentEmail = localStorage.getItem('profile_email') || 'no-email@example.com';
       
       if (nameInput) nameInput.value = currentName;
+      if (emailInput) emailInput.value = currentEmail;
       tempAvatarBase64 = null;
       updateModalAvatar();
 

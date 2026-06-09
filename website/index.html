@@ -1435,6 +1435,28 @@ def calculate_average(numbers):
             Create Account <i class="fa-solid fa-user-plus"></i>
           </button>
         </div>
+
+        <!-- Verification Form -->
+        <div id="form-verify" class="hidden space-y-4">
+          <div class="text-center py-2">
+            <p class="text-xs text-slate-400 leading-relaxed">
+              We've sent a 6-digit verification code to <span id="verify-email-display" class="font-bold text-white"></span>. Please enter it below:
+            </p>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">6-Digit Verification Code</label>
+            <input id="verify-code" type="text" maxlength="6" placeholder="123456"
+              class="w-full bg-white/5 border border-white/10 rounded-xl text-white text-center text-lg tracking-[0.25em] px-3.5 py-2.5 outline-none focus:border-neon transition-colors font-mono font-bold">
+          </div>
+          <button onclick="submitVerification()" class="btn-solid w-full py-2.5 text-xs font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer">
+            Verify Code <i class="fa-solid fa-circle-check"></i>
+          </button>
+          <div class="text-center mt-2">
+            <button onclick="resendVerifyCode()" class="text-[10px] text-neon hover:underline bg-transparent border-none outline-none cursor-pointer">
+              Didn't receive code? Resend
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1482,33 +1504,134 @@ def calculate_average(numbers):
       }
     }
 
-    function submitLogin() {
-      const email = document.getElementById('login-email')?.value.trim();
-      const pass = document.getElementById('login-password')?.value;
-      if (!email || !pass) {
-        alert('Please fill out all fields!');
-        return;
-      }
+    let pendingVerifyEmail = '';
+
+    function showVerificationScreen(email) {
+      pendingVerifyEmail = email;
+      document.getElementById('verify-email-display').textContent = email;
       
-      const prefix = email.split('@')[0];
-      const displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-      localStorage.setItem('profile_name', displayName || 'Developer Account');
+      // Hide login and signup forms
+      document.getElementById('form-login').classList.add('hidden');
+      document.getElementById('form-signup').classList.add('hidden');
       
-      window.location.href = "dashboard/index.html";
+      // Show verify form
+      document.getElementById('form-verify').classList.remove('hidden');
+      
+      // Clear code input
+      document.getElementById('verify-code').value = '';
     }
 
-    function submitSignup() {
-      const name = document.getElementById('signup-name')?.value.trim();
-      const email = document.getElementById('signup-email')?.value.trim();
-      const pass = document.getElementById('signup-password')?.value;
-      
-      if (!name || !email || !pass) {
+    async function submitLogin() {
+      const email = document.getElementById('login-email')?.value.trim();
+      const password = document.getElementById('login-password')?.value;
+      if (!email || !password) {
         alert('Please fill out all fields!');
         return;
       }
       
-      localStorage.setItem('profile_name', name);
-      window.location.href = "dashboard/index.html";
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('profile_name', data.name);
+          localStorage.setItem('profile_email', data.email);
+          window.location.href = "dashboard/index.html";
+        } else {
+          const errorData = await response.json();
+          if (errorData.detail === 'unverified') {
+            showVerificationScreen(email);
+          } else {
+            alert(errorData.detail || 'Login failed. Please check your credentials.');
+          }
+        }
+      } catch (err) {
+        console.error('Login error:', err);
+        alert('Error connecting to authentication server. Please verify the backend is running.');
+      }
+    }
+
+    async function submitSignup() {
+      const name = document.getElementById('signup-name')?.value.trim();
+      const email = document.getElementById('signup-email')?.value.trim();
+      const password = document.getElementById('signup-password')?.value;
+      
+      if (!name || !email || !password) {
+        alert('Please fill out all fields!');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        
+        if (response.ok) {
+          showVerificationScreen(email);
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Registration failed.');
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        alert('Error connecting to authentication server. Please verify the backend is running.');
+      }
+    }
+
+    async function submitVerification() {
+      const code = document.getElementById('verify-code')?.value.trim();
+      if (!code || code.length !== 6) {
+        alert('Please enter a 6-digit code!');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail, code })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('profile_name', data.name);
+          localStorage.setItem('profile_email', data.email);
+          alert('Email verified successfully!');
+          window.location.href = "dashboard/index.html";
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Verification failed. Please try again.');
+        }
+      } catch (err) {
+        console.error('Verification error:', err);
+        alert('Error connecting to authentication server.');
+      }
+    }
+
+    async function resendVerifyCode() {
+      try {
+        const response = await fetch(`${getBackendUrl()}/auth/resend`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: pendingVerifyEmail })
+        });
+        
+        if (response.ok) {
+          alert('A new verification code has been sent to your email.');
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || 'Failed to resend code.');
+        }
+      } catch (err) {
+        console.error('Resend error:', err);
+        alert('Error connecting to server.');
+      }
     }
 
     function handleOpenDashboard(e) {

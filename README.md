@@ -77,5 +77,7 @@ This project is fully ready for deployment:
 
 
 
-mongodb connection string : mongodb+srv://dammytoon1_db_user:<db_password>@ai-tech-sphere.frzq1nc.mongodb.net/?appName=ai-tech-sphere
+mongodb connection string : mongodb+srv://dammytoon1_db_user:shan1234@ai-tech-sphere.frzq1nc.mongodb.net/?appName=ai-tech-sphere
 
+pinecone:  pcsk_6nwF82_9CAKBYZT2uW83wNc7xkVdasT77v26JTgRqK5uEXDrQgNzidXei4
+vagLBp3JuFKp

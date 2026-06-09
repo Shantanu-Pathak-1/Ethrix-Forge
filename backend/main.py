@@ -2,6 +2,10 @@ import os
 import json
 import time
 import requests
+import bcrypt
+import random
+import smtplib
+from email.mime.text import MIMEText
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, status, BackgroundTasks, Request
 from contextvars import ContextVar
@@ -10,6 +14,8 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from groq import Groq
 from groq import GroqError, RateLimitError, InternalServerError, APIConnectionError
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +28,65 @@ def log_debug(message: str):
             f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {message}\n")
     except Exception as e:
         print(f"[DEBUG ERROR] Failed to write log: {e}")
+
+# MongoDB Connection Setup
+db_client = None
+users_collection = None
+
+mongodb_url = os.getenv("MONGODB_URL")
+if not mongodb_url or "<db_password>" in mongodb_url:
+    log_debug("WARNING: MONGODB_URL is missing or contains placeholder '<db_password>'. Auth database will not be connected.")
+else:
+    try:
+        db_client = MongoClient(mongodb_url, serverSelectionTimeoutMS=5000)
+        # Test connection
+        db_client.admin.command('ping')
+        db = db_client["ethrix_db"]
+        users_collection = db["users"]
+        # Create unique index on email
+        users_collection.create_index("email", unique=True)
+        log_debug("Successfully connected to MongoDB and verified index.")
+    except Exception as e:
+        log_debug(f"Failed to connect to MongoDB: {str(e)}")
+        db_client = None
+        users_collection = None
+
+# Password Hashing Helpers
+def hash_password(password: str) -> str:
+    pwd_bytes = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode('utf-8')
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    pwd_bytes = plain_password.encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8')
+    try:
+        return bcrypt.checkpw(pwd_bytes, hashed_bytes)
+    except Exception:
+        return False
+
+# SMTP Email Verification Helper
+def send_email_sync(to_email: str, subject: str, body_html: str):
+    sender = os.getenv("SMTP_SENDER_EMAIL")
+    password = os.getenv("SMTP_SENDER_PASSWORD")
+    
+    if not sender or not password or "your-gmail" in sender:
+        log_debug("WARNING: SMTP credentials not configured. Verification email was skipped.")
+        return
+        
+    msg = MIMEText(body_html, 'html')
+    msg['Subject'] = subject
+    msg['From'] = sender
+    msg['To'] = to_email
+    
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender, password)
+            server.sendmail(sender, to_email, msg.as_string())
+        log_debug(f"Verification email sent successfully to {to_email}")
+    except Exception as e:
+        log_debug(f"SMTP error sending email to {to_email}: {str(e)}")
 
 def query_ollama(messages, model: str, json_mode: bool = False):
     url = "http://127.0.0.1:11434/api/chat"
@@ -544,6 +609,23 @@ async def extract_groq_api_key(request: Request, call_next):
     finally:
         groq_api_key_var.reset(token)
 
+# Auth Payloads
+class SignupPayload(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class VerifyPayload(BaseModel):
+    email: str
+    code: str
+
+class LoginPayload(BaseModel):
+    email: str
+    password: str
+
+class ResendPayload(BaseModel):
+    email: str
+
 # Request Payloads
 class CodePayload(BaseModel):
     code: str
@@ -586,6 +668,216 @@ async def health_check():
         "groq_api_key": api_key_status,
         "message": "Ethrix Core server (Groq Backend) is running!"
     }
+
+
+# Helper to check database connectivity
+def check_db_ready():
+    if users_collection is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MongoDB Connection is not configured or failed to initialize. Please configure a valid MONGODB_URL in backend/.env."
+        )
+
+@app.post("/auth/signup")
+async def auth_signup(payload: SignupPayload, background_tasks: BackgroundTasks):
+    check_db_ready()
+    
+    email = payload.email.strip().lower()
+    name = payload.name.strip()
+    password = payload.password
+    
+    if not name or not email or not password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Name, email, and password are required."
+        )
+        
+    # Check if user already exists
+    existing_user = users_collection.find_one({"email": email})
+    if existing_user:
+        if existing_user.get("verified", False):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email address is already registered."
+            )
+        # If exists but unverified, we can update password/name, generate new code, and resend
+        hashed = hash_password(password)
+        code = f"{random.randint(100000, 999999)}"
+        expires_at = time.time() + 600.0 # 10 mins
+        
+        users_collection.update_one(
+            {"email": email},
+            {"$set": {
+                "name": name,
+                "password_hash": hashed,
+                "verification_code": code,
+                "verification_expires_at": expires_at
+            }}
+        )
+    else:
+        # Create new unverified user
+        hashed = hash_password(password)
+        code = f"{random.randint(100000, 999999)}"
+        expires_at = time.time() + 600.0 # 10 mins
+        
+        try:
+            users_collection.insert_one({
+                "name": name,
+                "email": email,
+                "password_hash": hashed,
+                "verified": False,
+                "verification_code": code,
+                "verification_expires_at": expires_at
+            })
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Database error during registration: {str(e)}"
+            )
+            
+    # Send verification email in background
+    email_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #7c3aed; text-align: center;">Welcome to Ethrix Forge!</h2>
+      <p>Hi {name},</p>
+      <p>Thank you for creating an account with Ethrix Forge. To complete your sign-up, please verify your email using the 6-digit code below:</p>
+      <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
+        <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #0f172a;">{code}</span>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">This code is valid for 10 minutes. If you did not request this code, please ignore this email.</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="font-size: 11px; text-align: center; color: #94a3b8;">Built by Team Titans 4 for CodeVortex Hackathon</p>
+    </div>
+    """
+    background_tasks.add_task(
+        send_email_sync,
+        to_email=email,
+        subject="Verify your Ethrix Forge Account",
+        body_html=email_html
+    )
+    
+    return {"status": "verification_required", "message": "Verification code sent to your email."}
+
+@app.post("/auth/verify")
+async def auth_verify(payload: VerifyPayload):
+    check_db_ready()
+    
+    email = payload.email.strip().lower()
+    code = payload.code.strip()
+    
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+        
+    if user.get("verified", False):
+        return {"status": "success", "message": "Email is already verified.", "name": user["name"], "email": user["email"]}
+        
+    expires_at = user.get("verification_expires_at", 0)
+    if time.time() > expires_at:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verification code has expired. Please request a new one."
+        )
+        
+    if user.get("verification_code") != code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code."
+        )
+        
+    # Mark user as verified
+    users_collection.update_one(
+        {"email": email},
+        {"$set": {"verified": True}, "$unset": {"verification_code": "", "verification_expires_at": ""}}
+    )
+    
+    return {"status": "success", "message": "Email verified successfully!", "name": user["name"], "email": user["email"]}
+
+@app.post("/auth/login")
+async def auth_login(payload: LoginPayload):
+    check_db_ready()
+    
+    email = payload.email.strip().lower()
+    password = payload.password
+    
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or password."
+        )
+        
+    if not verify_password(password, user.get("password_hash", "")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or password."
+        )
+        
+    if not user.get("verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="unverified"
+        )
+        
+    return {
+        "status": "success",
+        "message": "Login successful!",
+        "name": user["name"],
+        "email": user["email"]
+    }
+
+@app.post("/auth/resend")
+async def auth_resend(payload: ResendPayload, background_tasks: BackgroundTasks):
+    check_db_ready()
+    
+    email = payload.email.strip().lower()
+    
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found."
+        )
+        
+    if user.get("verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account is already verified."
+        )
+        
+    code = f"{random.randint(100000, 999999)}"
+    expires_at = time.time() + 600.0 # 10 mins
+    
+    users_collection.update_one(
+        {"email": email},
+        {"$set": {"verification_code": code, "verification_expires_at": expires_at}}
+    )
+    
+    # Send email in background
+    email_html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      <h2 style="color: #7c3aed; text-align: center;">Verify your Ethrix Forge Account</h2>
+      <p>Hi {user['name']},</p>
+      <p>Here is your new 6-digit email verification code:</p>
+      <div style="background-color: #f8fafc; padding: 15px; text-align: center; border-radius: 8px; margin: 20px 0;">
+        <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #0f172a;">{code}</span>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">This code is valid for 10 minutes.</p>
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+      <p style="font-size: 11px; text-align: center; color: #94a3b8;">Built by Team Titans 4 for CodeVortex Hackathon</p>
+    </div>
+    """
+    background_tasks.add_task(
+        send_email_sync,
+        to_email=email,
+        subject="New Verification Code - Ethrix Forge",
+        body_html=email_html
+    )
+    
+    return {"status": "success", "message": "New verification code sent."}
 
 
 @app.post("/shutdown")
