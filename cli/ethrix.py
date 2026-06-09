@@ -463,7 +463,7 @@ def handle_analyze(file_path: str, url: str, exit_on_error: bool = True):
                 sev_color = "red" if sev.lower() == "high" else ("yellow" if sev.lower() == "medium" else "blue")
                 table.add_row("Security", f"[bold {sev_color}]{sev}[/]", str(risk.get("line_number") or "N/A"), risk.get("description", ""))
             if not chunk_bugs and not chunk_risks:
-                table.add_row("Clean", "[green]✓[/]", "-", "No issues found in this chunk")
+                table.add_row("Clean", "[green]OK[/]", "-", "No issues found in this chunk")
             console.print(table)
 
         except requests.exceptions.Timeout:
@@ -486,11 +486,11 @@ def handle_analyze(file_path: str, url: str, exit_on_error: bool = True):
         console.print()
         console.print(Panel(
             "Issues found! What would you like to do next?\n\n"
-            "  [bold cyan]f[/]  →  Fix & refactor the code\n"
-            "  [bold cyan]d[/]  →  Generate inline documentation\n"
-            "  [bold cyan]a[/]  →  Run full pipeline (fix + docgen)\n"
-            "  [bold cyan]n[/]  →  Skip (just view the report)",
-            title="🔧 Next Action",
+            "  [bold cyan]f[/]  ->  Fix & refactor the code\n"
+            "  [bold cyan]d[/]  ->  Generate inline documentation\n"
+            "  [bold cyan]a[/]  ->  Run full pipeline (fix + docgen)\n"
+            "  [bold cyan]n[/]  ->  Skip (just view the report)",
+            title="Next Action",
             border_style="yellow",
             expand=False
         ))
@@ -829,7 +829,7 @@ def handle_multi_files(
                         table.add_row("Security", f"[bold {sc}]{sev}[/]", risk.get("line_number") or "N/A", risk.get("description", ""))
                     console.print(table)
                 else:
-                    console.print(f"[green]✓ {os.path.basename(fp)}{chunk_label} — No issues found.[/]")
+                    console.print(f"[green]OK {os.path.basename(fp)}{chunk_label} — No issues found.[/]")
             
             elif command in ("fix", "docgen"):
                 # ── Fix / Docgen chunk ────────────────────────────────────
@@ -859,10 +859,10 @@ def handle_multi_files(
                 key = "refactored_code" if command == "fix" else "documented_code"
                 result_code = clean_newlines(data.get(key, ""))
                 chunk_reports.append(result_code)
-                console.print(f"[green]✓ {os.path.basename(fp)}{chunk_label} — processed.[/]")
+                console.print(f"[green]OK {os.path.basename(fp)}{chunk_label} -> processed.[/]")
         
-        # ── Per-file result ───────────────────────────────────────────────
-        status = "✅ done" if file_ok else "❌ error"
+        # -- Per-file result -----------------------------------------------
+        status = "[green]done[/]" if file_ok else "[red]error[/]"
         all_results.append((fp, status, f"{len(chunks)} chunk(s)" if len(chunks) > 1 else "single"))
         
         # Open browser report for this file if analyze
@@ -873,9 +873,9 @@ def handle_multi_files(
                 f"# Analysis: {fp}\n\n{combined_report}"
             )
     
-    # ── Final Summary Table ───────────────────────────────────────────────
+    # -- Final Summary Table -----------------------------------------------
     console.rule("[bold green]Multi-File Summary[/]")
-    summary_table = Table(title=f"Ethrix {command.upper()} — {total} File(s)", title_style="bold green")
+    summary_table = Table(title=f"Ethrix {command.upper()} -> {total} File(s)", title_style="bold green")
     summary_table.add_column("File", style="cyan")
     summary_table.add_column("Status", justify="center")
     summary_table.add_column("Chunks", justify="center")
@@ -883,7 +883,7 @@ def handle_multi_files(
         summary_table.add_row(os.path.basename(fp), status, info)
     console.print(summary_table)
 
-    # ── Post-analysis Action Prompt ───────────────────────────────────────
+    # -- Post-analysis Action Prompt ---------------------------------------
     # Only show for analyze/all command and when there were successful files
     if command == "analyze":
         done_files = [fp for fp, st, _ in all_results if "done" in st]
@@ -891,11 +891,11 @@ def handle_multi_files(
             console.print()
             console.print(Panel(
                 f"Analysis complete on [bold]{len(done_files)}[/] file(s). What next?\n\n"
-                "  [bold cyan]f[/]  →  Fix & refactor all analyzed files\n"
-                "  [bold cyan]d[/]  →  Generate inline documentation for all files\n"
-                "  [bold cyan]a[/]  →  Run full pipeline (fix + docgen) on all files\n"
-                "  [bold cyan]n[/]  →  Skip",
-                title="🔧 Next Action",
+                "  [bold cyan]f[/]  ->  Fix & refactor all analyzed files\n"
+                "  [bold cyan]d[/]  ->  Generate inline documentation for all files\n"
+                "  [bold cyan]a[/]  ->  Run full pipeline (fix + docgen) on all files\n"
+                "  [bold cyan]n[/]  ->  Skip",
+                title="Next Action",
                 border_style="yellow",
                 expand=False
             ))
@@ -1071,16 +1071,16 @@ def _model_badge(config: dict) -> str:
     provider = config.get("provider", "online")
     model = config.get("model", "unknown")
     if provider == "online":
-        return f"[bold green]☁ Online[/] [dim]|[/] [cyan]{model}[/]"
+        return f"[bold green]Online[/] [dim]|[/] [cyan]{model}[/]"
     else:
-        return f"[bold yellow]⚡ Offline[/] [dim]|[/] [cyan]{model}[/]"
+        return f"[bold yellow]Offline[/] [dim]|[/] [cyan]{model}[/]"
 
 
 def handle_chat(url: str, initial_files: Optional[List[str]] = None):
     config = load_config()
     provider = config.get("provider", "online")
     model = config.get("model", "unknown")
-    mode_label = "☁ Online (Cloud)" if provider == "online" else f"⚡ Offline (Local Ollama)"
+    mode_label = "Online (Cloud)" if provider == "online" else f"Offline (Local Ollama)"
 
     console.print(Panel(
         Markdown(
@@ -1180,7 +1180,7 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                         f"  Provider     : [cyan]{config.get('provider', 'unknown')}[/]\n"
                         f"  Model Name   : [cyan]{config.get('model', 'unknown')}[/]\n"
                         f"  Backend URL  : [cyan]{url}[/]",
-                        title="⚡ Ethrix Status",
+                        title="Ethrix Status",
                         border_style="green",
                         expand=False
                     ))
@@ -1190,7 +1190,7 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                     config = prompt_configuration(force=True)
                     provider = config.get("provider", "online")
                     model = config.get("model", "unknown")
-                    console.print(f"[green][+] Chat updated → {_model_badge(config)}[/]")
+                    console.print(f"[green][+] Chat updated -> {_model_badge(config)}[/]")
                     continue
                     
                 elif cmd in ["/add", "/load"]:
