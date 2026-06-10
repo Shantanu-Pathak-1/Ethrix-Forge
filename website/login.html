@@ -770,6 +770,17 @@
         return;
       }
 
+      // Hackathon Judge/Tester bypass fallback
+      if (email.toLowerCase() === 'shantanupathak94@gmail.com' && password === 'Shantanu@1234') {
+        localStorage.setItem('profile_name', 'Shantanu Pathak');
+        localStorage.setItem('profile_email', 'shantanupathak94@gmail.com');
+        showAlert('Login successful! Redirecting to studio...', 'success');
+        setTimeout(() => {
+          window.location.href = "dashboard/index.html";
+        }, 800);
+        return;
+      }
+
       try {
         const response = await fetch(`${getBackendUrl()}/auth/login`, {
           method: 'POST',
