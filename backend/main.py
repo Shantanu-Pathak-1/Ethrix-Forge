@@ -701,6 +701,11 @@ async def health_check():
     }
 
 
+@app.get("/ping")
+async def ping_endpoint():
+    return "ok"
+
+
 # Helper to check database connectivity
 def check_db_ready():
     if users_collection is None:
