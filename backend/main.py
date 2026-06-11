@@ -1,6 +1,8 @@
 import os
 import json
 import time
+import uuid
+import datetime
 import requests
 import bcrypt
 import random
@@ -14,7 +16,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from groq import Groq
 from groq import GroqError, RateLimitError, InternalServerError, APIConnectionError
-from pymongo import MongoClient
+from pymongo import MongoClient, DESCENDING
 from pymongo.errors import ConnectionFailure
 from concurrent.futures import ThreadPoolExecutor
 
@@ -33,6 +35,7 @@ def log_debug(message: str):
 # MongoDB Connection Setup
 db_client = None
 users_collection = None
+chat_sessions_collection = None
 
 mongodb_url = os.getenv("MONGODB_URL")
 if not mongodb_url or "<db_password>" in mongodb_url:
@@ -46,6 +49,10 @@ else:
         users_collection = db["users"]
         # Create unique index on email
         users_collection.create_index("email", unique=True)
+        # Initialize chat sessions collection with indexes
+        chat_sessions_collection = db["chat_sessions"]
+        chat_sessions_collection.create_index("session_id", unique=True)
+        chat_sessions_collection.create_index([("email", 1), ("updated_at", DESCENDING)])
         log_debug("Successfully connected to MongoDB and verified index.")
     except Exception as e:
         log_debug(f"Failed to connect to MongoDB: {str(e)}")
@@ -694,6 +701,18 @@ class LoginPayload(BaseModel):
 class ResendPayload(BaseModel):
     email: str
 
+# Chat History Models
+class ChatHistoryMessage(BaseModel):
+    role: str = Field(description="'user' or 'model'")
+    text: str = Field(description="Message content")
+    ts: Optional[str] = Field(None, description="ISO timestamp of the message")
+
+class ChatSavePayload(BaseModel):
+    email: str = Field(description="User email — used as the key")
+    session_id: str = Field(description="UUID identifying this chat session")
+    title: Optional[str] = Field(None, description="Short session title (first user message, truncated)")
+    messages: List[ChatHistoryMessage] = Field(description="Full ordered list of messages in the session")
+
 # Request Payloads
 class CodePayload(BaseModel):
     code: str
@@ -742,6 +761,91 @@ async def health_check():
 @app.get("/ping")
 async def ping_endpoint():
     return "ok"
+
+
+# ─── Chat History Endpoints ─────────────────────────────────────────────────
+
+@app.post("/chat/save")
+async def save_chat_session(payload: ChatSavePayload):
+    """Upsert a chat session for a user. Creates or fully replaces the session's messages."""
+    if chat_sessions_collection is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MongoDB is not configured. Chat history is unavailable."
+        )
+    email = payload.email.strip().lower()
+    now = datetime.datetime.utcnow()
+
+    # Build the message list with timestamps
+    messages_to_save = []
+    for m in payload.messages:
+        messages_to_save.append({
+            "role": m.role,
+            "text": m.text,
+            "ts": m.ts or now.isoformat()
+        })
+
+    # Auto-generate title from first user message if not provided
+    title = payload.title
+    if not title:
+        for m in messages_to_save:
+            if m["role"] == "user":
+                title = m["text"][:60].strip()
+                if len(m["text"]) > 60:
+                    title += "…"
+                break
+    title = title or "Untitled Session"
+
+    result = chat_sessions_collection.update_one(
+        {"session_id": payload.session_id},
+        {
+            "$set": {
+                "email": email,
+                "session_id": payload.session_id,
+                "title": title,
+                "updated_at": now,
+                "messages": messages_to_save,
+            },
+            "$setOnInsert": {
+                "created_at": now
+            }
+        },
+        upsert=True
+    )
+    return {"status": "ok", "session_id": payload.session_id, "title": title}
+
+
+@app.get("/chat/history")
+async def get_chat_history(email: str):
+    """Return all chat sessions for a user, sorted by most recent first."""
+    if chat_sessions_collection is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MongoDB is not configured. Chat history is unavailable."
+        )
+    email = email.strip().lower()
+    sessions = list(
+        chat_sessions_collection.find(
+            {"email": email},
+            {"_id": 0, "email": 0}
+        ).sort("updated_at", DESCENDING).limit(100)
+    )
+    return {"sessions": sessions}
+
+
+@app.delete("/chat/history/{session_id}")
+async def delete_chat_session(session_id: str, email: str):
+    """Delete a specific chat session (verified by email)."""
+    if chat_sessions_collection is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="MongoDB is not configured. Chat history is unavailable."
+        )
+    email = email.strip().lower()
+    result = chat_sessions_collection.delete_one({"session_id": session_id, "email": email})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found.")
+    return {"status": "deleted", "session_id": session_id}
 
 
 # Helper to check database connectivity

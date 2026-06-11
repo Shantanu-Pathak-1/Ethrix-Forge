@@ -1188,6 +1188,152 @@
       box-shadow: 0 4px 14px rgba(var(--primary-rgb), 0.32);
     }
 
+    /* ─── Chat History Panel ─────────────────────────── */
+    .chat-history-panel {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      background: rgba(var(--muted-rgb), 0.35);
+      overflow: hidden;
+    }
+
+    .chat-history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .chat-history-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted-foreground);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .btn-new-chat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--primary);
+      background: rgba(var(--primary-rgb), 0.08);
+      border: 1px solid rgba(var(--primary-rgb), 0.2);
+      border-radius: 8px;
+      padding: 4px 9px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .btn-new-chat:hover {
+      background: rgba(var(--primary-rgb), 0.16);
+      box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.18);
+    }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .history-date-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--muted-foreground);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 8px 6px 4px;
+      opacity: 0.65;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 8px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s;
+      min-width: 0;
+      border: 1px solid transparent;
+    }
+
+    .history-item:hover {
+      background: rgba(var(--primary-rgb), 0.07);
+      border-color: rgba(var(--primary-rgb), 0.12);
+    }
+
+    .history-item.active {
+      background: rgba(var(--primary-rgb), 0.12);
+      border-color: rgba(var(--primary-rgb), 0.25);
+    }
+
+    .history-item-title {
+      flex: 1;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--foreground);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .history-item.active .history-item-title {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .btn-del-session {
+      opacity: 0;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: var(--muted-foreground);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 9px;
+    }
+
+    .history-item:hover .btn-del-session {
+      opacity: 1;
+    }
+
+    .btn-del-session:hover {
+      color: #f43f5e;
+      background: rgba(244, 63, 94, 0.1);
+    }
+
+    .history-empty {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted-foreground);
+      padding: 20px 12px;
+      opacity: 0.7;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    @media (max-width: 640px) {
+      .chat-history-panel {
+        display: none;
+      }
+    }
+
     .typing-ind {
       display: inline-flex;
       align-items: center;
@@ -1844,75 +1990,92 @@
              ║ VIEW 2: AI CHAT CONSOLE              ║
              ╚═══════════════════════════════════════╝ -->
         <section id="view-chat" class="view-pane hidden flex-1 min-h-0 flex flex-col gap-4 animate-fade-in">
-          <div class="max-w-4xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
+          <div class="max-w-5xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
             <div>
               <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white">AI Chat Console</h1>
               <p class="text-xs text-slate-500 mt-1 font-medium">Explain bugs, refactor logic, or ask coding questions.</p>
             </div>
             <button onclick="clearChat()" class="btn-ghost text-xs flex-shrink-0">
-              <i class="fa-solid fa-rotate-left"></i> Reset Chat
+              <i class="fa-solid fa-rotate-left"></i> New Chat
             </button>
           </div>
 
-          <div class="max-w-4xl mx-auto w-full flex-1 min-h-0 h-full">
-            <div class="chat-wrap glass h-full w-full" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
-              <!-- Chat top bar -->
-              <div
-                class="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[rgba(var(--muted-rgb),0.5)] flex-shrink-0">
-                <div class="flex items-center gap-3">
-                  <div class="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                    <img src="../logo.png" class="h-8 w-auto object-contain rounded-lg" alt="Ethrix Logo" />
-                  </div>
-                  <div>
-                    <div class="text-xs font-bold text-slate-900 dark:text-white">Ethrix Review Assistant</div>
-                    <div class="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono mt-0.5">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Online
+          <div class="max-w-5xl mx-auto w-full flex-1 min-h-0 h-full">
+            <div class="chat-wrap glass h-full w-full flex" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+
+              <!-- History Sidebar -->
+              <div class="chat-history-panel">
+                <div class="chat-history-header">
+                  <span class="chat-history-title">History</span>
+                  <button onclick="clearChat()" class="btn-new-chat">
+                    <i class="fa-solid fa-plus" style="font-size:8px;"></i> New
+                  </button>
+                </div>
+                <div id="history-list" class="history-list">
+                  <div class="history-empty">No history yet.<br>Start chatting!</div>
+                </div>
+              </div>
+
+              <!-- Chat Main -->
+              <div class="flex flex-col flex-1 min-w-0 h-full">
+                <!-- Chat top bar -->
+                <div
+                  class="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[rgba(var(--muted-rgb),0.5)] flex-shrink-0">
+                  <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                      <img src="../logo.png" class="h-8 w-auto object-contain rounded-lg" alt="Ethrix Logo" />
+                    </div>
+                    <div>
+                      <div class="text-xs font-bold text-slate-900 dark:text-white">Ethrix Review Assistant</div>
+                      <div class="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Online
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                <!-- Model Variant Select for Chat -->
-                <div class="flex items-center gap-2">
-                  <select id="setting-model-chat"
-                    class="bg-[var(--muted)] border border-[var(--border)] text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
-                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Messages -->
-              <div id="chat-body-container" class="chat-body">
-                <div class="flex flex-col gap-1">
-                  <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. Send me a snippet, ask
-                    me to explain a bug, or inquire about coding conventions.</div>
-                  <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
-                </div>
-              </div>
-
-              <!-- Chat Input -->
-              <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
-                <!-- Attachment preview area -->
-                <div id="chat-attachments-container" class="flex flex-wrap gap-2 mb-1"></div>
-                <div id="chat-attachment-preview" class="hidden"></div>
-
-                <!-- Input Row -->
-                <div class="flex items-end gap-2.5 w-full">
-                  <!-- File upload button -->
-                  <button id="btn-chat-upload" onclick="document.getElementById('chat-file-input').click()" 
-                          class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-500/10 border border-[var(--border)] text-slate-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all cursor-pointer flex-shrink-0"
-                          title="Upload code file">
-                    <i class="fa-solid fa-paperclip text-sm"></i>
-                  </button>
-                  <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)" multiple>
-
-                  <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
-                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
                   
-                  <button id="btn-chat-send" onclick="sendChatMessage()" class="chat-send">
-                    <i class="fa-solid fa-paper-plane text-sm"></i>
-                  </button>
+                  <!-- Model Variant Select for Chat -->
+                  <div class="flex items-center gap-2">
+                    <select id="setting-model-chat"
+                      class="bg-[var(--muted)] border border-[var(--border)] text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
+                      <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                      <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Messages -->
+                <div id="chat-body-container" class="chat-body">
+                  <div class="flex flex-col gap-1">
+                    <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. Send me a snippet, ask
+                      me to explain a bug, or inquire about coding conventions.</div>
+                    <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
+                  </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
+                  <!-- Attachment preview area -->
+                  <div id="chat-attachments-container" class="flex flex-wrap gap-2 mb-1"></div>
+                  <div id="chat-attachment-preview" class="hidden"></div>
+
+                  <!-- Input Row -->
+                  <div class="flex items-end gap-2.5 w-full">
+                    <!-- File upload button -->
+                    <button id="btn-chat-upload" onclick="document.getElementById('chat-file-input').click()" 
+                            class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-500/10 border border-[var(--border)] text-slate-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all cursor-pointer flex-shrink-0"
+                            title="Upload code file">
+                      <i class="fa-solid fa-paperclip text-sm"></i>
+                    </button>
+                    <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)" multiple>
+
+                    <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
+                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                    
+                    <button id="btn-chat-send" onclick="sendChatMessage()" class="chat-send">
+                      <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2079,6 +2242,7 @@
       document.getElementById('breadcrumb-active').textContent = labels[target];
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('sidebar-overlay').classList.remove('visible');
+      if (target === 'chat') loadChatHistory();
     }
 
     let backendUrl = 'https://ethrix-forge.onrender.com';
@@ -2698,6 +2862,127 @@
     let chatHistory = [];
     let selectedChatFiles = [];
     let sessionChatFiles = [];
+    let currentSessionId = crypto.randomUUID ? crypto.randomUUID() : ('sess-' + Date.now());
+    let chatSessionTitle = null; // Set from first user message
+
+    // ── Chat History Persistence ─────────────────────────
+    async function saveChatToServer() {
+      const email = localStorage.getItem('profile_email');
+      if (!email || chatHistory.length === 0) return;
+      await detectBackend();
+      const now = new Date().toISOString();
+      const messages = chatHistory.map(m => ({ role: m.role, text: m.text, ts: now }));
+      // Fire-and-forget — don't await or block the UI
+      fetch(`${getBackendUrl()}/chat/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          session_id: currentSessionId,
+          title: chatSessionTitle,
+          messages
+        })
+      }).catch(() => {}); // Silent fail — history is non-critical
+    }
+
+    async function loadChatHistory() {
+      const email = localStorage.getItem('profile_email');
+      const listEl = document.getElementById('history-list');
+      if (!email || !listEl) return;
+      await detectBackend();
+      try {
+        const res = await fetch(`${getBackendUrl()}/chat/history?email=${encodeURIComponent(email)}`, {
+          headers: getApiHeaders()
+        });
+        if (!res.ok) { listEl.innerHTML = '<div class="history-empty">Could not load history.</div>'; return; }
+        const data = await res.json();
+        const sessions = data.sessions || [];
+        if (sessions.length === 0) {
+          listEl.innerHTML = '<div class="history-empty">No past chats yet.<br>Start a new conversation!</div>';
+          return;
+        }
+        // Date grouping helpers
+        const today = new Date(); today.setHours(0,0,0,0);
+        const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+        let lastGroup = null;
+        let html = '';
+        sessions.forEach(s => {
+          const d = s.updated_at ? new Date(s.updated_at) : null;
+          let group = 'Older';
+          if (d) {
+            const sd = new Date(d); sd.setHours(0,0,0,0);
+            if (sd.getTime() === today.getTime()) group = 'Today';
+            else if (sd.getTime() === yesterday.getTime()) group = 'Yesterday';
+          }
+          if (group !== lastGroup) {
+            html += `<div class="history-date-label">${group}</div>`;
+            lastGroup = group;
+          }
+          const isActive = s.session_id === currentSessionId;
+          const titleSafe = esc(s.title || 'Untitled');
+          html += `<div class="history-item ${isActive ? 'active' : ''}" onclick="loadSession(${JSON.stringify(s).replace(/"/g, '&quot;')})" data-sid="${s.session_id}">
+            <i class="fa-regular fa-comment-dots text-[10px] opacity-50 flex-shrink-0"></i>
+            <span class="history-item-title" title="${titleSafe}">${titleSafe}</span>
+            <button class="btn-del-session" onclick="deleteSession('${s.session_id}', event)" title="Delete">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>`;
+        });
+        listEl.innerHTML = html;
+      } catch { listEl.innerHTML = '<div class="history-empty">History unavailable.</div>'; }
+    }
+
+    function loadSession(session) {
+      // Mark active in sidebar
+      document.querySelectorAll('#history-list .history-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.sid === session.session_id);
+      });
+      // Restore session into runtime state
+      currentSessionId = session.session_id;
+      chatSessionTitle = session.title || null;
+      chatHistory = (session.messages || []).map(m => ({ role: m.role, text: m.text }));
+      sessionChatFiles = [];
+      // Rebuild chat body
+      const body = document.getElementById('chat-body-container');
+      if (!body) return;
+      body.innerHTML = '';
+      // Welcome message first
+      const welcome = document.createElement('div');
+      welcome.className = 'flex flex-col gap-1';
+      welcome.innerHTML = '<div class="msg msg-model">👋 Hi! I\'m Ethrix. This is a restored session.</div><div class="msg-time mt-1 pl-1">Ethrix · Restored</div>';
+      body.appendChild(welcome);
+      // Re-render messages
+      chatHistory.forEach(m => {
+        const el = document.createElement('div');
+        el.className = 'flex flex-col gap-1';
+        const isUser = m.role === 'user';
+        let content, extraClass = '';
+        if (isUser) {
+          content = esc(m.text).replace(/\n/g, '<br>');
+        } else {
+          content = parseMarkdown(m.text);
+          extraClass = 'md-content';
+        }
+        el.innerHTML = `<div class="msg ${extraClass} msg-${isUser ? 'user ml-auto' : 'model'} animate-fade-in">${content}</div><div class="msg-time" style="align-self:${isUser ? 'flex-end' : 'flex-start'};padding:0 4px">${isUser ? 'You' : 'Ethrix'}</div>`;
+        body.appendChild(el);
+      });
+      body.scrollTop = body.scrollHeight;
+    }
+
+    async function deleteSession(sessionId, e) {
+      if (e) e.stopPropagation();
+      const email = localStorage.getItem('profile_email');
+      if (!email) return;
+      await detectBackend();
+      try {
+        await fetch(`${getBackendUrl()}/chat/history/${sessionId}?email=${encodeURIComponent(email)}`, {
+          method: 'DELETE', headers: getApiHeaders()
+        });
+        // If we deleted the active session, start fresh
+        if (sessionId === currentSessionId) clearChat();
+        else loadChatHistory();
+      } catch { showToast('⚠️ Could not delete session.'); }
+    }
 
     function addChatFiles(files) {
       if (!files || files.length === 0) return;
@@ -2859,7 +3144,18 @@
         if (res.ok) {
           const data = await res.json();
           const reply = data.reply || 'No response.';
-          appendMsg(reply, 'model'); chatHistory.push({ role: 'model', text: reply });
+          appendMsg(reply, 'model');
+          chatHistory.push({ role: 'model', text: reply });
+          // Set session title from first user message
+          if (!chatSessionTitle) {
+            const firstUser = chatHistory.find(m => m.role === 'user');
+            if (firstUser) {
+              chatSessionTitle = firstUser.text.substring(0, 60);
+              if (firstUser.text.length > 60) chatSessionTitle += '…';
+            }
+          }
+          saveChatToServer();
+          loadChatHistory(); // Refresh sidebar
         } else appendMsg('⚠️ Server error occurred.', 'model');
       } catch {
         removeTyping(typId);
@@ -2911,11 +3207,14 @@
     function clearChat() {
       chatHistory = [];
       sessionChatFiles = [];
+      chatSessionTitle = null;
+      currentSessionId = crypto.randomUUID ? crypto.randomUUID() : ('sess-' + Date.now());
       document.getElementById('chat-body-container').innerHTML = `
         <div class="flex flex-col gap-1">
           <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. How can I help?</div>
           <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
         </div>`;
+      loadChatHistory(); // Refresh sidebar to deselect any active session
     }
     function triggerQuickPrompt(msg) { document.getElementById('chat-input').value = msg; sendChatMessage(); }
     function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
