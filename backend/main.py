@@ -1144,7 +1144,7 @@ def process_fix_chunk(idx: int, chunk: str, payload: CodePayload, system_instruc
     groq_api_key_var.set(api_key)
     messages = [
         {"role": "system", "content": system_instruction},
-        {"role": "user", "content": f"Refactor, optimize, and fix all bugs in the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
+        {"role": "user", "content": f"Review and fix the following code snippet{lang_info}. Remember the rules: if there are no bugs/errors, return empty string for refactored_code. If code is large/chunk, only return the updated function/class/block that was changed:\n\n```\n{chunk}\n```"}
     ]
     try:
         log_debug(f"[fix] chunk {idx+1} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
@@ -1161,12 +1161,16 @@ def process_fix_chunk(idx: int, chunk: str, payload: CodePayload, system_instruc
             )
         
         data = parse_json_robust(content)
-        refactored = data.get("refactored_code", chunk)
-        
+        refactored = data.get("refactored_code", "")
         expl = data.get("explanation", "")
+        
+        # If refactored is exactly same or empty, treat as unmodified
+        if refactored == chunk or not refactored.strip():
+            refactored = ""
+            
         start_line = idx * 300 + 1
         end_line = min((idx + 1) * 300, total_lines)
-        explanation_text = f"### Section: Lines {start_line} to {end_line}\n\n{expl}" if expl else ""
+        explanation_text = f"### Section: Lines {start_line} to {end_line}\n\n{expl}" if (expl and refactored) else ""
         
         return refactored, explanation_text, None
     except Exception as e:
@@ -1182,21 +1186,13 @@ def fix_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
-        "You are an expert software engineer specializing in refactoring, debugging, and optimization. "
-        "Review the provided code and perform the following tasks:\n"
-        "1. Check if the code has any logical bugs, syntax errors, security vulnerabilities, or performance bottlenecks. If bugs/errors are present, fix them.\n"
-        "2. If the code is already correct, optimized, and contains no bugs or errors, do not make arbitrary refactoring changes. "
-        "Instead, set the `refactored_code` value exactly to the original input code, and in the `explanation`, clearly state that the code is completely correct, healthy, and bug-free, and list any optional suggestions/improvements for the developer.\n"
-        "3. You MUST NEVER truncate, summarize, or omit the refactored code with placeholders or excuses like 'for brevity' or 'the code is too extensive'. "
-        "If you perform any refactoring or bug fixes, you MUST provide the complete, fully functional refactored code.\n\n"
-        "You MUST return your response strictly as a JSON object matching the following structure:\n"
-        "{\n"
-        '  "refactored_code": "The fully corrected and optimized version of the input code (or the original code if no fixes are needed)",\n'
-        '  "explanation": "Detailed step-by-step markdown explanation of the fixes/refactoring made, OR a clear explanation that the code is already correct and bug-free, followed by optional suggestions for improvement."\n'
-        "}\n\n"
-        "CRITICAL JSON ESCAPING RULE:\n"
-        "All double quotes (\") inside any JSON string values (including code snippets and explanations) MUST be escaped with a single backslash (e.g., \\\").\n"
-        "DO NOT use double-escaped backslashes (like \\\\\") or quadruple backslashes (like \\\\\\\"). Ensure that the generated response is standard, valid JSON."
+        "You are an elite software engineer. Your task is to FIX bugs, syntax errors, logical issues, or security risks in the provided code.\n"
+        "Follow these rules strictly:\n"
+        "1. MINIMAL TEXT: Give a very brief, minimal text explanation. Do not write long essays or lists. Focus almost entirely on the code.\n"
+        "2. IF NO BUGS: If the code is already correct and has no bugs, security risks, or logical errors, set the `refactored_code` value strictly to \"\" (empty string), and set `explanation` to a simple message like 'Your code is completely healthy and bug-free!'\n"
+        "3. IF BUGS FOUND: Fix all bugs. Return the corrected code in `refactored_code` and a very brief explanation of the fix in `explanation`.\n"
+        "4. LARGE CODE HANDLING: If the input code is large (or a large chunk), do NOT reproduce the entire unchanged file. "
+        "Instead, return ONLY the specific updated function, class, or code block that was modified, so the user can easily see what to replace."
     )
 
     chunks = chunk_code_backend(payload.code, chunk_size=300)
@@ -1216,6 +1212,7 @@ def fix_code(payload: CodePayload):
     refactored_parts = []
     explanations = []
     
+    modified_any = False
     for idx, (refactored, explanation_text, err) in enumerate(results):
         if err and len(chunks) == 1:
             if isinstance(err, HTTPException):
@@ -1224,18 +1221,24 @@ def fix_code(payload: CodePayload):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"An unexpected error occurred during code fixing: {str(err)}"
             )
-        refactored_parts.append(refactored)
-        if explanation_text:
+        
+        if refactored and refactored.strip():
+            refactored_parts.append(refactored)
+            modified_any = True
+            
+        if explanation_text and "healthy and bug-free" not in explanation_text.lower():
             explanations.append(explanation_text)
             
-    # Combine code chunks ensuring line boundaries are clean
-    combined_code = ""
-    for idx, part in enumerate(refactored_parts):
-        if idx > 0 and not combined_code.endswith("\n") and not part.startswith("\n"):
-            combined_code += "\n"
-        combined_code += part
-        
-    combined_explanation = "\n\n---\n\n".join(explanations) if explanations else "No explanation generated."
+    if modified_any:
+        combined_code = ""
+        for idx, part in enumerate(refactored_parts):
+            if idx > 0 and not combined_code.endswith("\n") and not part.startswith("\n"):
+                combined_code += "\n"
+            combined_code += part
+        combined_explanation = "\n\n---\n\n".join(explanations) if explanations else "Bugs fixed."
+    else:
+        combined_code = ""
+        combined_explanation = "Your code is completely healthy, correct, and bug-free!"
     
     return {
         "refactored_code": combined_code,

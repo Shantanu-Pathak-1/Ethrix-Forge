@@ -1674,7 +1674,7 @@
                   <span id="analyze-label">Analyze Code</span>
                 </button>
                 <button id="btn-fix" onclick="runAction('fix')" class="btn-purple flex-1">
-                  <i class="fa-solid fa-wand-magic-sparkles"></i> Fix & Refactor
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Fix
                 </button>
                 <button id="btn-docgen" onclick="runAction('docgen')" class="btn-ghost flex-1">
                   <i class="fa-solid fa-file-code text-violet-500"></i> Generate Docs
@@ -2583,7 +2583,13 @@
         if (!res.ok) throw new Error(`API ${res.status}`);
         const json = await res.json();
         if (action === 'analyze') reportMarkdown = json.raw_markdown_report || json.report || JSON.stringify(json, null, 2);
-        else if (action === 'fix') reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}\n\n---\n## Refactored Code\n\`\`\`${lang}\n${json.refactored_code}\n\`\`\``;
+        else if (action === 'fix') {
+          if (json.refactored_code && json.refactored_code.trim()) {
+            reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}\n\n---\n## Refactored Code\n\`\`\`${lang}\n${json.refactored_code}\n\`\`\``;
+          } else {
+            reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}`;
+          }
+        }
         else reportMarkdown = `# Automated Documentation\n\n## Commit Message\n\`${json.commit_message}\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${json.documented_code}\n\`\`\``;
       } catch {
         isOffline = true;
