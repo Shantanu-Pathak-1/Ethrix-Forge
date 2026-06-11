@@ -2697,6 +2697,7 @@
     // ── AI Chat ─────────────────────────────────────────
     let chatHistory = [];
     let selectedChatFiles = [];
+    let sessionChatFiles = [];
 
     function addChatFiles(files) {
       if (!files || files.length === 0) return;
@@ -2787,6 +2788,14 @@
         selectedChatFiles.forEach(file => {
           fileContext += `--- File: ${file.name} ---\n\`\`\`\n${file.content}\n\`\`\`\n\n`;
           fileDisplayList += `<div class="flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit mb-1.5 font-mono" style="color:inherit;"><i class="fa-solid fa-file-code text-violet-500"></i><b>${esc(file.name)}</b></div>`;
+          
+          // Keep in sessionChatFiles for history context persistence
+          const existingIdx = sessionChatFiles.findIndex(f => f.name === file.name);
+          if (existingIdx !== -1) {
+            sessionChatFiles[existingIdx] = file;
+          } else {
+            sessionChatFiles.push(file);
+          }
         });
         
         apiMessage = `${fileContext}${msg || "Please review these files and provide feedback/diagnostics."}`;
@@ -2808,9 +2817,43 @@
       try {
         const provider = 'online';
         const model = document.getElementById('setting-model-chat')?.value || 'llama-3.3-70b-versatile';
+        
+        // Context window optimization: keep 3 previous messages if session has files, else 6.
+        const hasFiles = sessionChatFiles.length > 0;
+        const historyLimit = hasFiles ? 3 : 6;
+        const historySource = chatHistory.slice(0, -1);
+        let trimmedHistory = historySource.slice(-historyLimit);
+        
+        // Find session files that are missing from current trimmedHistory and current apiMessage
+        const missingFiles = [];
+        sessionChatFiles.forEach(file => {
+          const fileMarker = `--- File: ${file.name} ---`;
+          let found = apiMessage.includes(fileMarker);
+          if (!found) {
+            for (const h of trimmedHistory) {
+              if (h.text && h.text.includes(fileMarker)) {
+                found = true;
+                break;
+              }
+            }
+          }
+          if (!found) {
+            missingFiles.push(file);
+          }
+        });
+        
+        // Prepend missing files to trimmed history to ensure model retains file context
+        if (missingFiles.length > 0) {
+          let missingContext = "System Context - The user previously uploaded the following files in this session. Refer to them if needed:\n\n";
+          missingFiles.forEach(file => {
+            missingContext += `--- File: ${file.name} ---\n\`\`\`\n${file.content}\n\`\`\`\n\n`;
+          });
+          trimmedHistory.unshift({ role: 'user', text: missingContext });
+        }
+
         const res = await fetch(`${getBackendUrl()}/chat`, {
           method: 'POST', headers: getApiHeaders(),
-          body: JSON.stringify({ message: apiMessage, history: chatHistory.slice(0, -1), provider, model })
+          body: JSON.stringify({ message: apiMessage, history: trimmedHistory, provider, model })
         });
         removeTyping(typId);
         if (res.ok) {
@@ -2867,6 +2910,7 @@
 
     function clearChat() {
       chatHistory = [];
+      sessionChatFiles = [];
       document.getElementById('chat-body-container').innerHTML = `
         <div class="flex flex-col gap-1">
           <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. How can I help?</div>
