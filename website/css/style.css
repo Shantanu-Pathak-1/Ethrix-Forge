@@ -1330,7 +1330,7 @@ a {
   scroll-behavior: smooth;
 }
 .chat-body::-webkit-scrollbar {
-  width: 4px;
+  width: 8px;
 }
 .chat-body::-webkit-scrollbar-track {
   background: transparent;
@@ -1615,7 +1615,7 @@ a {
   overflow-y: auto;
 }
 .dd-body::-webkit-scrollbar {
-  width: 4px;
+  width: 8px;
 }
 .dd-body::-webkit-scrollbar-thumb {
   background: var(--bd2);

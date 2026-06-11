@@ -37,12 +37,53 @@ $zipUrl = "https://github.com/Shantanu-Pathak-1/Ethrix-Forge/archive/refs/heads/
 $zipPath = "$env:TEMP\ethrix-forge.zip"
 
 Write-Host "[*] Downloading Ethrix-Forge codebase from GitHub..." -ForegroundColor Yellow
-try {
-    # Ensure TLS 1.2/1.3 is enabled
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
-    Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
-} catch {
-    Write-Error "Failed to download codebase from GitHub: $_"
+$downloadSuccess = $false
+
+# Method 1: Invoke-WebRequest
+if (-not $downloadSuccess) {
+    try {
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13
+        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing -TimeoutSec 60
+        if (Test-Path $zipPath) { $downloadSuccess = $true }
+    } catch {
+        Write-Host "[-] Method 1 (Invoke-WebRequest) failed. Trying fallback..." -ForegroundColor Gray
+    }
+}
+
+# Method 2: WebClient
+if (-not $downloadSuccess) {
+    try {
+        $webClient = New-Object System.Net.WebClient
+        $webClient.DownloadFile($zipUrl, $zipPath)
+        if (Test-Path $zipPath) { $downloadSuccess = $true }
+    } catch {
+        Write-Host "[-] Method 2 (WebClient) failed. Trying fallback..." -ForegroundColor Gray
+    }
+}
+
+# Method 3: curl.exe
+if (-not $downloadSuccess) {
+    try {
+        & curl.exe -L -o $zipPath $zipUrl
+        if (Test-Path $zipPath) { $downloadSuccess = $true }
+    } catch {
+        Write-Host "[-] Method 3 (curl) failed. Trying fallback..." -ForegroundColor Gray
+    }
+}
+
+# Method 4: BITS Transfer
+if (-not $downloadSuccess) {
+    try {
+        Import-Module BitsTransfer
+        Start-BitsTransfer -Source $zipUrl -Destination $zipPath
+        if (Test-Path $zipPath) { $downloadSuccess = $true }
+    } catch {
+        Write-Host "[-] Method 4 (BITS Transfer) failed." -ForegroundColor Gray
+    }
+}
+
+if (-not $downloadSuccess) {
+    Write-Error "Failed to download codebase from GitHub using all available methods. Please check your internet connection."
     exit 1
 }
 
