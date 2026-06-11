@@ -2498,7 +2498,7 @@
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000);
+        const timeoutId = setTimeout(() => controller.abort(), 180000);
         const provider = document.getElementById('setting-provider')?.value || 'online';
         const model = document.getElementById('setting-model')?.value || '';
         const res = await fetch(`${getBackendUrl()}/${action}`, {

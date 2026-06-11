@@ -22,3 +22,8 @@ Thumbs.db
 Desktop.ini
 
 .vercel
+node_modules/
+out/
+dist/
+.DS_Store
+*.vsix

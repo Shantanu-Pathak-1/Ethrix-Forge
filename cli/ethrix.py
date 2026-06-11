@@ -131,6 +131,13 @@ def save_config(config: dict):
     except Exception as e:
         console.print(f"[yellow]Warning: Could not save configuration: {e}[/]")
 
+def get_api_headers(config: dict) -> dict:
+    headers = {"Content-Type": "application/json"}
+    saved_key = config.get("groq_api_key")
+    if saved_key:
+        headers["X-Groq-API-Key"] = saved_key
+    return headers
+
 def ensure_ollama_running() -> bool:
     url = "http://127.0.0.1:11434/api/tags"
     try:
@@ -195,6 +202,20 @@ def prompt_configuration(force=False) -> dict:
     if provider_choice == "1":
         config["provider"] = "online"
         config["model"] = "llama-3.3-70b-versatile"
+        
+        # Prompt for Groq API Key
+        current_key = config.get("groq_api_key", "")
+        key_prompt = "\nEnter your Groq API Key (gsk_...) [press Enter to use default server key]: "
+        if current_key:
+            key_prompt = f"\nEnter your Groq API Key (gsk_...) [currently: {current_key[:10]}...; press Enter to keep current]: "
+            
+        groq_key = console.input(key_prompt).strip()
+        if groq_key:
+            config["groq_api_key"] = groq_key
+            console.print("[green][+] Custom Groq API Key saved.[/]")
+        elif not current_key:
+            config["groq_api_key"] = ""
+            
         console.print("[green][+] Configured to Online Mode (Groq API).[/]")
     else:
         config["provider"] = "offline"
@@ -424,7 +445,7 @@ def handle_analyze(file_path: str, url: str, exit_on_error: bool = True):
         
         payload = {"code": chunk, "language": lang, "provider": provider, "model": model}
         try:
-            response = requests.post(f"{url}/analyze", json=payload, timeout=300)
+            response = requests.post(f"{url}/analyze", json=payload, headers=get_api_headers(config), timeout=300)
             if response.status_code != 200:
                 console.print(f"[bold red]API Error (Status {response.status_code}):[/] {response.text}")
                 if num_chunks == 1:
@@ -528,7 +549,7 @@ def handle_fix(file_path: str, url: str, exit_on_error: bool = True):
             console.rule(f"[dim cyan]{os.path.basename(file_path)} fix chunk {idx}/{num_chunks}[/]")
         payload = {"code": chunk, "language": lang, "provider": provider, "model": model}
         try:
-            response = requests.post(f"{url}/fix", json=payload, timeout=300)
+            response = requests.post(f"{url}/fix", json=payload, headers=get_api_headers(config), timeout=300)
             if response.status_code != 200:
                 console.print(f"[bold red]API Error chunk {idx}:[/] {response.text}")
                 fixed_parts.append(chunk)  # keep original if fix fails
@@ -618,7 +639,7 @@ def handle_docgen(file_path: str, url: str, exit_on_error: bool = True):
             console.rule(f"[dim cyan]{os.path.basename(file_path)} docgen chunk {idx}/{num_chunks}[/]")
         payload = {"code": chunk, "language": lang, "provider": provider, "model": model}
         try:
-            response = requests.post(f"{url}/docgen", json=payload, timeout=300)
+            response = requests.post(f"{url}/docgen", json=payload, headers=get_api_headers(config), timeout=300)
             if response.status_code != 200:
                 console.print(f"[bold red]API Error chunk {idx}:[/] {response.text}")
                 documented_parts.append(chunk)  # keep original on failure
@@ -795,6 +816,7 @@ def handle_multi_files(
                             json={"code": chunk, "language": lang,
                                   "provider": config.get("provider", "online"),
                                   "model": config.get("model")},
+                            headers=get_api_headers(config),
                             timeout=120
                         )
                     except requests.exceptions.Timeout:
@@ -842,6 +864,7 @@ def handle_multi_files(
                             json={"code": chunk, "language": lang,
                                   "provider": config.get("provider", "online"),
                                   "model": config.get("model")},
+                            headers=get_api_headers(config),
                             timeout=120
                         )
                     except requests.exceptions.Timeout:
@@ -1368,6 +1391,10 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                     console.print(f"[dim yellow][*] Running fix on {len(all_dir_files)} files...[/]")
                     handle_multi_files(all_dir_files, "fix", url)
                     continue
+                elif all_dir_files and any(k in user_lower for k in docgen_kw):
+                    console.print(f"[dim yellow][*] Running docgen on {len(all_dir_files)} files...[/]")
+                    handle_multi_files(all_dir_files, "docgen", url)
+                    continue
 
                 # ── Default: send dir context to chat ────────────────────
                 try:
@@ -1378,7 +1405,7 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                             "provider": config.get("provider", "online"),
                             "model": config.get("model")
                         }
-                        response = requests.post(f"{url}/chat", json=payload, timeout=120)
+                        response = requests.post(f"{url}/chat", json=payload, headers=get_api_headers(config), timeout=120)
                 except requests.exceptions.Timeout:
                     console.print("[bold red]Timeout:[/] Model took too long to respond.")
                     continue
@@ -1394,9 +1421,9 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                     history.append({"role": "model", "text": reply})
                 else:
                     console.print(f"[bold red]API Error ({response.status_code}):[/] {response.text}")
-
+ 
                 continue
-
+ 
             # ── 2. File Detection ─────────────────────────────────────────
             referenced_files = find_referenced_files(user_input)
             
@@ -1431,7 +1458,7 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                             "provider": config.get("provider", "online"),
                             "model": config.get("model")
                         }
-                        response = requests.post(f"{url}/chat", json=payload, timeout=120)
+                        response = requests.post(f"{url}/chat", json=payload, headers=get_api_headers(config), timeout=120)
                 except requests.exceptions.Timeout:
                     console.print("[bold red]Timeout:[/] Model took too long to respond. Try again or use a faster model.")
                     continue
@@ -1462,7 +1489,7 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
                         "provider": config.get("provider", "online"),
                         "model": config.get("model")
                     }
-                    response = requests.post(f"{url}/chat", json=payload, timeout=120)
+                    response = requests.post(f"{url}/chat", json=payload, headers=get_api_headers(config), timeout=120)
             except requests.exceptions.Timeout:
                 console.print("[bold red]Timeout:[/] Model took too long to respond. Try again or use a faster model.")
                 continue
@@ -1490,28 +1517,23 @@ def handle_chat(url: str, initial_files: Optional[List[str]] = None):
             console.print(f"[bold red]Unexpected Error:[/] {e}")
 
 def handle_all(file_path: str, url: str):
-    """Run the full pipeline: analyze → fix → docgen.
-    Suppresses individual browser reports to avoid opening 3 tabs.
-    Shows a combined terminal summary at the end.
-    """
-    console.print(f"\n[bold cyan]=== RUNNING FULL CODE REVIEW & OPTIMIZATION PIPELINE ===[/]")
-    console.print(f"[dim]File: {file_path}[/]\n")
-    
     config = load_config()
     provider = config.get("provider", "online")
     model = config.get("model", "llama-3.3-70b-versatile")
-    code = read_file(file_path)
+
+    code = read_file(file_path, exit_on_error=True)
     if code is None:
         return
     lang = detect_language(file_path) or "text"
-    
+
     combined_sections = []
 
-    # ── Step 1: Analyze ──────────────────────────────────────────────────
-    console.print("[bold cyan]>> Step 1/3: Analyzing for Bugs & Security Risks...[/]")
+    # ── Step 1: Analyze ───────────────────────────────────────────────────
+    console.print("\n[bold cyan]>> Step 1/3: Running Code Analysis...[/]")
     try:
-        r = requests.post(f"{config.get('url', 'http://127.0.0.1:8000')}/analyze",
+        r = requests.post(f"{url}/analyze",
                           json={"code": code, "language": lang, "provider": provider, "model": model},
+                          headers=get_api_headers(config),
                           timeout=120)
         if r.status_code == 200:
             data = r.json()
@@ -1522,12 +1544,12 @@ def handle_all(file_path: str, url: str):
                 has_issues = True
                 sev = bug.get("severity", "Medium")
                 sev_color = "red" if sev.lower() == "high" else ("yellow" if sev.lower() == "medium" else "blue")
-                table.add_row("Bug/Flaw", f"[{sev_color}]{sev}[/]", bug.get("line_number") or "N/A", bug.get("description", ""))
+                table.add_row("Bug/Flaw", f"[{sev_color}]{sev}[/]", str(bug.get("line_number") or "N/A"), bug.get("description", ""))
             for risk in data.get("security_risks", []):
                 has_issues = True
                 sev = risk.get("severity", "Medium")
                 sev_color = "red" if sev.lower() == "high" else ("yellow" if sev.lower() == "medium" else "blue")
-                table.add_row("Security Risk", f"[bold {sev_color}]{sev}[/]", risk.get("line_number") or "N/A", risk.get("description", ""))
+                table.add_row("Security Risk", f"[bold {sev_color}]{sev}[/]", str(risk.get("line_number") or "N/A"), risk.get("description", ""))
             if not has_issues:
                 table.add_row("Clean", "[green]None[/]", "-", "No bugs or security issues detected!")
             console.print(table)
@@ -1540,8 +1562,9 @@ def handle_all(file_path: str, url: str):
     # ── Step 2: Fix ───────────────────────────────────────────────────────
     console.print("\n[bold cyan]>> Step 2/3: Generating Code Fixes & Refactoring...[/]")
     try:
-        r = requests.post(f"{config.get('url', 'http://127.0.0.1:8000')}/fix",
+        r = requests.post(f"{url}/fix",
                           json={"code": code, "language": lang, "provider": provider, "model": model},
+                          headers=get_api_headers(config),
                           timeout=120)
         if r.status_code == 200:
             data = r.json()
@@ -1564,8 +1587,9 @@ def handle_all(file_path: str, url: str):
     # ── Step 3: Docgen ────────────────────────────────────────────────────
     console.print("\n[bold cyan]>> Step 3/3: Generating Inline Documentation...[/]")
     try:
-        r = requests.post(f"{config.get('url', 'http://127.0.0.1:8000')}/docgen",
+        r = requests.post(f"{url}/docgen",
                           json={"code": code, "language": lang, "provider": provider, "model": model},
+                          headers=get_api_headers(config),
                           timeout=120)
         if r.status_code == 200:
             data = r.json()
@@ -1587,6 +1611,7 @@ def handle_all(file_path: str, url: str):
         export_to_temp_html_and_open(f"Full Pipeline: {os.path.basename(file_path)}", full_md)
 
     console.print("\n[bold green][SUCCESS] Full Code Review Pipeline Completed![/]\n")
+
 
 
 def main():
