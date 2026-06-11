@@ -1089,6 +1089,12 @@
       background: var(--card);
       border-radius: var(--radius);
       overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .chat-wrap.drag-over {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 25px rgba(var(--primary-rgb), 0.2) !important;
     }
 
     .chat-body {
@@ -1879,13 +1885,8 @@
               <!-- Chat Input -->
               <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
                 <!-- Attachment preview area -->
-                <div id="chat-attachment-preview" class="hidden flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit">
-                  <i class="fa-solid fa-file-code text-violet-500"></i>
-                  <span id="chat-attachment-name" class="font-mono text-slate-700 dark:text-slate-300 font-semibold">file.py</span>
-                  <button onclick="clearChatAttachment(event)" class="text-slate-400 hover:text-rose-500 transition-colors ml-1.5">
-                    <i class="fa-solid fa-xmark text-[10px]"></i>
-                  </button>
-                </div>
+                <div id="chat-attachments-container" class="flex flex-wrap gap-2 mb-1"></div>
+                <div id="chat-attachment-preview" class="hidden"></div>
 
                 <!-- Input Row -->
                 <div class="flex items-end gap-2.5 w-full">
@@ -1895,7 +1896,7 @@
                           title="Upload code file">
                     <i class="fa-solid fa-paperclip text-sm"></i>
                   </button>
-                  <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)">
+                  <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)" multiple>
 
                   <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
                     onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
@@ -2357,6 +2358,28 @@
       checkBackendHealth();
       setInterval(checkBackendHealth, 10000);
       renderLineNumbers();
+
+      // Chat Drag & Drop Listeners
+      const chatWrap = document.querySelector('.chat-wrap');
+      if (chatWrap) {
+        ['dragenter', 'dragover'].forEach(eName => {
+          chatWrap.addEventListener(eName, (ev) => {
+            ev.preventDefault();
+            chatWrap.classList.add('drag-over');
+          });
+        });
+        ['dragleave', 'drop'].forEach(eName => {
+          chatWrap.addEventListener(eName, (ev) => {
+            ev.preventDefault();
+            chatWrap.classList.remove('drag-over');
+          });
+        });
+        chatWrap.addEventListener('drop', (ev) => {
+          if (ev.dataTransfer.files && ev.dataTransfer.files.length > 0) {
+            addChatFiles(ev.dataTransfer.files);
+          }
+        });
+      }
     });
 
     // Sync theme in real-time across open tabs
@@ -2584,51 +2607,100 @@
 
     // ── AI Chat ─────────────────────────────────────────
     let chatHistory = [];
-    let selectedChatFile = null;
+    let selectedChatFiles = [];
+
+    function addChatFiles(files) {
+      if (!files || files.length === 0) return;
+
+      const filePromises = Array.from(files).map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            resolve({
+              name: file.name,
+              size: file.size,
+              content: ev.target.result
+            });
+          };
+          reader.onerror = () => {
+            resolve(null);
+          };
+          reader.readAsText(file);
+        });
+      });
+
+      Promise.all(filePromises).then(newFiles => {
+        const validFiles = newFiles.filter(f => f !== null);
+        if (validFiles.length > 0) {
+          selectedChatFiles = selectedChatFiles.concat(validFiles);
+          renderChatAttachments();
+          showToast(`📎 ${validFiles.length} file(s) attached.`);
+        } else {
+          showToast(`⚠️ Failed to read file(s).`);
+        }
+      });
+    }
 
     function handleChatFileSelect(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        selectedChatFile = {
-          name: file.name,
-          content: ev.target.result
-        };
-        const preview = document.getElementById('chat-attachment-preview');
-        const nameEl = document.getElementById('chat-attachment-name');
-        if (preview && nameEl) {
-          nameEl.textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-          preview.classList.remove('hidden');
-          preview.style.display = 'inline-flex';
-        }
-        showToast(`📎 File attached: ${file.name}`);
-      };
-      reader.readAsText(file);
+      addChatFiles(e.target.files);
+      document.getElementById('chat-file-input').value = '';
+    }
+
+    function renderChatAttachments() {
+      const container = document.getElementById('chat-attachments-container');
+      if (!container) return;
+
+      if (selectedChatFiles.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = selectedChatFiles.map((file, idx) => `
+        <div class="flex items-center gap-2 p-1.5 px-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit font-mono">
+          <i class="fa-solid fa-file-code text-violet-500"></i>
+          <span class="text-slate-700 dark:text-slate-300 font-semibold">
+            ${file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name} (${(file.size/1024).toFixed(1)} KB)
+          </span>
+          <button type="button" onclick="removeChatAttachment(${idx}, event)" class="text-slate-400 hover:text-rose-500 transition-colors ml-1.5">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function removeChatAttachment(idx, e) {
+      if (e) e.stopPropagation();
+      selectedChatFiles.splice(idx, 1);
+      renderChatAttachments();
     }
 
     function clearChatAttachment(e) {
       if (e) e.stopPropagation();
-      selectedChatFile = null;
-      document.getElementById('chat-file-input').value = '';
-      const preview = document.getElementById('chat-attachment-preview');
-      if (preview) {
-        preview.classList.add('hidden');
-        preview.style.display = '';
-      }
+      selectedChatFiles = [];
+      const input = document.getElementById('chat-file-input');
+      if (input) input.value = '';
+      renderChatAttachments();
     }
 
     async function sendChatMessage() {
       const inp = document.getElementById('chat-input');
       const msg = inp.value.trim();
-      if (!msg && !selectedChatFile) return;
+      if (!msg && selectedChatFiles.length === 0) return;
 
       let apiMessage = msg;
       let displayMessage = msg;
 
-      if (selectedChatFile) {
-        apiMessage = `I have uploaded a file named "${selectedChatFile.name}". Here is its content:\n\n\`\`\`\n${selectedChatFile.content}\n\`\`\`\n\n${msg || "Please review this code file and provide feedback/diagnostics."}`;
-        displayMessage = `<div class="flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit mb-2 font-mono" style="color:inherit;"><i class="fa-solid fa-file-code text-violet-500"></i><b>${esc(selectedChatFile.name)}</b></div>${esc(msg) || "<i>Please review this file.</i>"}`;
+      if (selectedChatFiles.length > 0) {
+        let fileContext = "I have uploaded the following files:\n\n";
+        let fileDisplayList = "";
+        
+        selectedChatFiles.forEach(file => {
+          fileContext += `--- File: ${file.name} ---\n\`\`\`\n${file.content}\n\`\`\`\n\n`;
+          fileDisplayList += `<div class="flex items-center gap-2 p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-xs w-fit mb-1.5 font-mono" style="color:inherit;"><i class="fa-solid fa-file-code text-violet-500"></i><b>${esc(file.name)}</b></div>`;
+        });
+        
+        apiMessage = `${fileContext}${msg || "Please review these files and provide feedback/diagnostics."}`;
+        displayMessage = `<div class="flex flex-col gap-1 mb-2">${fileDisplayList}</div>${esc(msg) || "<i>Please review these files.</i>"}`;
       } else {
         displayMessage = esc(msg);
       }
