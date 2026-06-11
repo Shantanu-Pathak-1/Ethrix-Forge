@@ -640,9 +640,6 @@
   <script>
     // ── Get Backend URL Endpoint Helper ──────────
     function getBackendUrl() {
-      const url = localStorage.getItem('backend_url');
-      if (url) return url.replace(/\/$/, '');
-
       const hostname = window.location.hostname;
       const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
 

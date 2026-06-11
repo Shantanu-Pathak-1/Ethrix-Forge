@@ -727,6 +727,7 @@ class DocGenResponse(BaseModel):
     commit_message: str = Field(description="A concise, conventional git commit message summarizing the changes")
 
 
+@app.head("/")
 @app.get("/")
 async def health_check():
     api_key_status = "configured" if (groq_api_key_var.get() or os.getenv("GROQ_API_KEY")) else "missing"

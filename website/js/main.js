@@ -7,9 +7,6 @@ let currentMarkdown = '';
 let outputTab = 'rendered';
 
 function getBackendUrl() {
-  const url = localStorage.getItem('backend_url');
-  if (url) return url.replace(/\/$/, '');
-  
   // Auto-detect environment: local vs production
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
