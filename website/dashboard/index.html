@@ -1131,6 +1131,15 @@
       align-self: flex-start;
     }
 
+    .msg-model.md-content p,
+    .msg-model.md-content ul li {
+      color: var(--foreground);
+    }
+
+    .msg-model.md-content p:last-child {
+      margin-bottom: 0;
+    }
+
     .msg-time {
       font-size: 9.5px;
       color: var(--muted-foreground);
@@ -2821,8 +2830,19 @@
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const el = document.createElement('div');
       el.className = 'flex flex-col gap-1';
-      const content = isHTML ? text : esc(text).replace(/\n/g, '<br>');
-      el.innerHTML = `<div class="msg msg-${role === 'user' ? 'user' : 'model'} ${role === 'user' ? 'ml-auto' : ''} animate-fade-in">${content}</div><div class="msg-time" style="align-self:${role === 'user' ? 'flex-end' : 'flex-start'};padding:0 4px">${role === 'user' ? 'You' : 'Ethrix'} · ${time}</div>`;
+      
+      let content;
+      let extraClass = '';
+      if (isHTML) {
+        content = text;
+      } else if (role === 'model') {
+        content = parseMarkdown(text);
+        extraClass = 'md-content';
+      } else {
+        content = esc(text).replace(/\n/g, '<br>');
+      }
+      
+      el.innerHTML = `<div class="msg ${extraClass} msg-${role === 'user' ? 'user' : 'model'} ${role === 'user' ? 'ml-auto' : ''} animate-fade-in">${content}</div><div class="msg-time" style="align-self:${role === 'user' ? 'flex-end' : 'flex-start'};padding:0 4px">${role === 'user' ? 'You' : 'Ethrix'} · ${time}</div>`;
       body.appendChild(el);
       body.scrollTop = body.scrollHeight;
     }
