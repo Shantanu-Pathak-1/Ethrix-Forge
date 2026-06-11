@@ -16,6 +16,7 @@ from groq import Groq
 from groq import GroqError, RateLimitError, InternalServerError, APIConnectionError
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+from concurrent.futures import ThreadPoolExecutor
 
 # Load environment variables from .env file
 load_dotenv()
@@ -1026,8 +1027,58 @@ async def shutdown(background_tasks: BackgroundTasks):
     return {"message": "Shutting down server..."}
 
 
+def process_analyze_chunk(idx: int, chunk: str, payload: CodePayload, system_instruction: str, lang_info: str, total_lines: int, api_key: Optional[str]):
+    # Propagate ContextVar to the worker thread
+    groq_api_key_var.set(api_key)
+    offset = idx * 300
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": f"Analyze the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
+    ]
+    try:
+        log_debug(f"[analyze] chunk {idx+1} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
+        if payload.provider == "offline":
+            content = query_ollama(
+                messages=messages,
+                model=payload.model or "llama3",
+                json_mode=True
+            )
+        else:
+            content = query_groq_with_retry(
+                messages=messages,
+                response_format={"type": "json_object"}
+            )
+        
+        data = parse_json_robust(content)
+        
+        # Adjust line numbers for bugs and security risks
+        chunk_bugs = data.get("bugs", [])
+        for bug in chunk_bugs:
+            if "line_number" in bug:
+                bug["line_number"] = adjust_line_number(bug["line_number"], offset)
+        
+        chunk_risks = data.get("security_risks", [])
+        for risk in chunk_risks:
+            if "line_number" in risk:
+                risk["line_number"] = adjust_line_number(risk["line_number"], offset)
+        
+        chunk_md = data.get("raw_markdown_report", "")
+        start_line = offset + 1
+        end_line = min(offset + 300, total_lines)
+        report_text = f"### Section: Lines {start_line} to {end_line}\n\n{chunk_md}" if chunk_md else ""
+        
+        return chunk_bugs, chunk_risks, report_text, None
+    except Exception as e:
+        import traceback
+        log_debug(f"[analyze] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}\n{traceback.format_exc()[:600]}")
+        start_line = offset + 1
+        end_line = min(offset + 300, total_lines)
+        err_report = f"### Section: Lines {start_line} to {end_line}\n\n⚠️ Failed to analyze this section: {str(e)}"
+        return [], [], err_report, e
+
+
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_code(payload: CodePayload):
+def analyze_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
@@ -1049,67 +1100,36 @@ async def analyze_code(payload: CodePayload):
     )
 
     chunks = chunk_code_backend(payload.code, chunk_size=300)
+    total_lines = len(payload.code.splitlines())
+    api_key = groq_api_key_var.get()
     
+    # Run chunks concurrently in ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=min(len(chunks), 8)) as executor:
+        futures = [
+            executor.submit(
+                process_analyze_chunk,
+                idx, chunk, payload, system_instruction, lang_info, total_lines, api_key
+            )
+            for idx, chunk in enumerate(chunks)
+        ]
+        results = [f.result() for f in futures]
+        
     all_bugs = []
     all_security_risks = []
     markdown_reports = []
     
-    total_lines = len(payload.code.splitlines())
-
-    for idx, chunk in enumerate(chunks):
-        offset = idx * 300
-        messages = [
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": f"Analyze the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
-        ]
-        
-        try:
-            log_debug(f"[analyze] chunk {idx+1}/{len(chunks)} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
-            if payload.provider == "offline":
-                content = query_ollama(
-                    messages=messages,
-                    model=payload.model or "llama3",
-                    json_mode=True
-                )
-            else:
-                content = query_groq_with_retry(
-                    messages=messages,
-                    response_format={"type": "json_object"}
-                )
-            
-            data = parse_json_robust(content)
-            
-            # Adjust line numbers for bugs and security risks
-            chunk_bugs = data.get("bugs", [])
-            for bug in chunk_bugs:
-                if "line_number" in bug:
-                    bug["line_number"] = adjust_line_number(bug["line_number"], offset)
-            all_bugs.extend(chunk_bugs)
-            
-            chunk_risks = data.get("security_risks", [])
-            for risk in chunk_risks:
-                if "line_number" in risk:
-                    risk["line_number"] = adjust_line_number(risk["line_number"], offset)
-            all_security_risks.extend(chunk_risks)
-            
-            chunk_md = data.get("raw_markdown_report", "")
-            if chunk_md:
-                start_line = offset + 1
-                end_line = min(offset + 300, total_lines)
-                markdown_reports.append(f"### Section: Lines {start_line} to {end_line}\n\n{chunk_md}")
-                
-        except Exception as e:
-            import traceback
-            log_debug(f"[analyze] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}\n{traceback.format_exc()[:600]}")
-            if len(chunks) == 1:
-                if isinstance(e, HTTPException):
-                    raise e
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"An unexpected error occurred during analysis: {str(e)}"
-                )
-            # For multi-chunk, we can continue or log error to report
-            markdown_reports.append(f"### Section: Lines {offset+1} to {min(offset+300, total_lines)}\n\n⚠️ Failed to analyze this section: {str(e)}")
+    for idx, (bugs, risks, report_text, err) in enumerate(results):
+        if err and len(chunks) == 1:
+            if isinstance(err, HTTPException):
+                raise err
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An unexpected error occurred during analysis: {str(err)}"
+            )
+        all_bugs.extend(bugs)
+        all_security_risks.extend(risks)
+        if report_text:
+            markdown_reports.append(report_text)
             
     combined_md = "\n\n---\n\n".join(markdown_reports) if markdown_reports else "No report generated."
     return {
@@ -1119,8 +1139,46 @@ async def analyze_code(payload: CodePayload):
     }
 
 
+
+def process_fix_chunk(idx: int, chunk: str, payload: CodePayload, system_instruction: str, lang_info: str, total_lines: int, api_key: Optional[str]):
+    groq_api_key_var.set(api_key)
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": f"Refactor, optimize, and fix all bugs in the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
+    ]
+    try:
+        log_debug(f"[fix] chunk {idx+1} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
+        if payload.provider == "offline":
+            content = query_ollama(
+                messages=messages,
+                model=payload.model or "llama3",
+                json_mode=True
+            )
+        else:
+            content = query_groq_with_retry(
+                messages=messages,
+                response_format={"type": "json_object"}
+            )
+        
+        data = parse_json_robust(content)
+        refactored = data.get("refactored_code", chunk)
+        
+        expl = data.get("explanation", "")
+        start_line = idx * 300 + 1
+        end_line = min((idx + 1) * 300, total_lines)
+        explanation_text = f"### Section: Lines {start_line} to {end_line}\n\n{expl}" if expl else ""
+        
+        return refactored, explanation_text, None
+    except Exception as e:
+        log_debug(f"[fix] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}")
+        start_line = idx * 300 + 1
+        end_line = min((idx + 1) * 300, total_lines)
+        err_explanation = f"### Section: Lines {start_line} to {end_line}\n\n⚠️ Failed to refactor this section: {str(e)}"
+        return chunk, err_explanation, e
+
+
 @app.post("/fix", response_model=FixResponse)
-async def fix_code(payload: CodePayload):
+def fix_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
@@ -1142,53 +1200,33 @@ async def fix_code(payload: CodePayload):
     )
 
     chunks = chunk_code_backend(payload.code, chunk_size=300)
+    total_lines = len(payload.code.splitlines())
+    api_key = groq_api_key_var.get()
     
+    with ThreadPoolExecutor(max_workers=min(len(chunks), 8)) as executor:
+        futures = [
+            executor.submit(
+                process_fix_chunk,
+                idx, chunk, payload, system_instruction, lang_info, total_lines, api_key
+            )
+            for idx, chunk in enumerate(chunks)
+        ]
+        results = [f.result() for f in futures]
+        
     refactored_parts = []
     explanations = []
     
-    total_lines = len(payload.code.splitlines())
-
-    for idx, chunk in enumerate(chunks):
-        messages = [
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": f"Refactor, optimize, and fix all bugs in the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
-        ]
-        
-        try:
-            log_debug(f"[fix] chunk {idx+1}/{len(chunks)} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
-            if payload.provider == "offline":
-                content = query_ollama(
-                    messages=messages,
-                    model=payload.model or "llama3",
-                    json_mode=True
-                )
-            else:
-                content = query_groq_with_retry(
-                    messages=messages,
-                    response_format={"type": "json_object"}
-                )
-            
-            data = parse_json_robust(content)
-            refactored_parts.append(data.get("refactored_code", chunk))
-            
-            expl = data.get("explanation", "")
-            if expl:
-                start_line = idx * 300 + 1
-                end_line = min((idx + 1) * 300, total_lines)
-                explanations.append(f"### Section: Lines {start_line} to {end_line}\n\n{expl}")
-                
-        except Exception as e:
-            log_debug(f"[fix] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}")
-            if len(chunks) == 1:
-                if isinstance(e, HTTPException):
-                    raise e
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"An unexpected error occurred during code fixing: {str(e)}"
-                )
-            # If a chunk fails in multi-chunk, keep original chunk
-            refactored_parts.append(chunk)
-            explanations.append(f"### Section: Lines {idx*300+1} to {min((idx+1)*300, total_lines)}\n\n⚠️ Failed to refactor this section: {str(e)}")
+    for idx, (refactored, explanation_text, err) in enumerate(results):
+        if err and len(chunks) == 1:
+            if isinstance(err, HTTPException):
+                raise err
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An unexpected error occurred during code fixing: {str(err)}"
+            )
+        refactored_parts.append(refactored)
+        if explanation_text:
+            explanations.append(explanation_text)
             
     # Combine code chunks ensuring line boundaries are clean
     combined_code = ""
@@ -1205,8 +1243,39 @@ async def fix_code(payload: CodePayload):
     }
 
 
+
+def process_docgen_chunk(idx: int, chunk: str, payload: CodePayload, system_instruction: str, lang_info: str, api_key: Optional[str]):
+    groq_api_key_var.set(api_key)
+    messages = [
+        {"role": "system", "content": system_instruction},
+        {"role": "user", "content": f"Add inline comments and docstrings to the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
+    ]
+    try:
+        log_debug(f"[docgen] chunk {idx+1} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
+        if payload.provider == "offline":
+            content = query_ollama(
+                messages=messages,
+                model=payload.model or "llama3",
+                json_mode=True
+            )
+        else:
+            content = query_groq_with_retry(
+                messages=messages,
+                response_format={"type": "json_object"}
+            )
+        
+        data = parse_json_robust(content)
+        documented = data.get("documented_code", chunk)
+        commit_msg = data.get("commit_message", "")
+        
+        return documented, commit_msg, None
+    except Exception as e:
+        log_debug(f"[docgen] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}")
+        return chunk, "", e
+
+
 @app.post("/docgen", response_model=DocGenResponse)
-async def docgen_code(payload: CodePayload):
+def docgen_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
@@ -1225,48 +1294,32 @@ async def docgen_code(payload: CodePayload):
     )
 
     chunks = chunk_code_backend(payload.code, chunk_size=300)
+    api_key = groq_api_key_var.get()
     
+    with ThreadPoolExecutor(max_workers=min(len(chunks), 8)) as executor:
+        futures = [
+            executor.submit(
+                process_docgen_chunk,
+                idx, chunk, payload, system_instruction, lang_info, api_key
+            )
+            for idx, chunk in enumerate(chunks)
+        ]
+        results = [f.result() for f in futures]
+        
     documented_parts = []
     commit_messages = []
-
-    for idx, chunk in enumerate(chunks):
-        messages = [
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": f"Add inline comments and docstrings to the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
-        ]
-        
-        try:
-            log_debug(f"[docgen] chunk {idx+1}/{len(chunks)} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
-            if payload.provider == "offline":
-                content = query_ollama(
-                    messages=messages,
-                    model=payload.model or "llama3",
-                    json_mode=True
-                )
-            else:
-                content = query_groq_with_retry(
-                    messages=messages,
-                    response_format={"type": "json_object"}
-                )
-            
-            data = parse_json_robust(content)
-            documented_parts.append(data.get("documented_code", chunk))
-            
-            msg = data.get("commit_message", "")
-            if msg:
-                commit_messages.append(msg)
-                
-        except Exception as e:
-            log_debug(f"[docgen] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}")
-            if len(chunks) == 1:
-                if isinstance(e, HTTPException):
-                    raise e
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"An unexpected error occurred during documentation generation: {str(e)}"
-                )
-            # If a chunk fails, keep original chunk
-            documented_parts.append(chunk)
+    
+    for idx, (documented, commit_msg, err) in enumerate(results):
+        if err and len(chunks) == 1:
+            if isinstance(err, HTTPException):
+                raise err
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"An unexpected error occurred during documentation generation: {str(err)}"
+            )
+        documented_parts.append(documented)
+        if commit_msg:
+            commit_messages.append(commit_msg)
             
     combined_code = ""
     for idx, part in enumerate(documented_parts):
@@ -1280,6 +1333,7 @@ async def docgen_code(payload: CodePayload):
         "documented_code": combined_code,
         "commit_message": final_commit
     }
+
 
 
 # Chat Schema Definition
@@ -1298,7 +1352,7 @@ class ChatResponse(BaseModel):
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat_interaction(payload: ChatPayload):
+def chat_interaction(payload: ChatPayload):
     system_prompt = (
         "You are Ethrix, a sharp and intelligent AI code reviewer with a personality — concise, technical, and slightly witty. "
         "Your goal is to assist the developer with explaining, refactoring, documenting, and debugging code. "
