@@ -27,6 +27,26 @@ The project has been structured into clean, self-contained directories to separa
 
 ---
 
+## 🌍 Global Installation (Run Anywhere!)
+
+You can install Ethrix-Forge globally on your system to run it from any directory using the simple `ethrix` command.
+
+### Windows (PowerShell)
+Open PowerShell and run the following one-liner command:
+```powershell
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls13; iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/Shantanu-Pathak-1/Ethrix-Forge/master/install.ps1'))
+```
+
+### macOS & Linux (Bash)
+Open your terminal and run the following one-liner command:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Shantanu-Pathak-1/Ethrix-Forge/master/install.sh | bash
+```
+
+*Note: Once installed, restart your terminal and run the global command `ethrix chat` or `ethrix analyze <file_path>` from any directory.*
+
+---
+
 ## 🚀 Local Setup & Execution
 
 ### 1. Backend Server Setup

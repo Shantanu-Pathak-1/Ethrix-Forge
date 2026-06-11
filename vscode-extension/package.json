@@ -1,0 +1,132 @@
+{
+  "name": "ethrix-forge",
+  "displayName": "Ethrix Forge",
+  "description": "Elite AI-based Code Reviewer and Refactoring Assistant",
+  "version": "1.0.0",
+  "publisher": "team-titans",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:ethrixChat"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ethrix-forge-sidebar",
+          "title": "Ethrix Forge",
+          "icon": "resources/logo-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ethrix-forge-sidebar": [
+        {
+          "type": "webview",
+          "id": "ethrixChat",
+          "name": "Ethrix Chat Panel"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "ethrix-forge.analyzeCode",
+        "title": "Ethrix: Analyze Selection/File",
+        "category": "Ethrix Forge"
+      },
+      {
+        "command": "ethrix-forge.fixCode",
+        "title": "Ethrix: Optimize & Fix Selection/File",
+        "category": "Ethrix Forge"
+      },
+      {
+        "command": "ethrix-forge.docgenCode",
+        "title": "Ethrix: Generate Documentation",
+        "category": "Ethrix Forge"
+      },
+      {
+        "command": "ethrix-forge.startBackend",
+        "title": "Ethrix: Start Local Backend Server",
+        "category": "Ethrix Forge"
+      },
+      {
+        "command": "ethrix-forge.focusChat",
+        "title": "Ethrix: Focus Chat Panel",
+        "category": "Ethrix Forge"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "ethrix-forge.analyzeCode",
+          "group": "ethrix-forge@1",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "ethrix-forge.fixCode",
+          "group": "ethrix-forge@2",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "ethrix-forge.docgenCode",
+          "group": "ethrix-forge@3",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Ethrix Forge",
+      "properties": {
+        "ethrix.backendUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8000",
+          "description": "URL of the Ethrix Core FastAPI backend server."
+        },
+        "ethrix.provider": {
+          "type": "string",
+          "enum": [
+            "online",
+            "offline"
+          ],
+          "default": "online",
+          "description": "Model provider mode (online Cloud vs offline Local)."
+        },
+        "ethrix.model": {
+          "type": "string",
+          "default": "llama-3.3-70b-versatile",
+          "description": "Model identifier to request from backend. Default is llama-3.3-70b-versatile for Online, or llama3 for Offline."
+        },
+        "ethrix.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Optional custom Groq API Key to pass to the backend in the X-Groq-API-Key header."
+        },
+        "ethrix.reportFileName": {
+          "type": "string",
+          "default": "ethrix_report.md",
+          "description": "Name of the permanent report file created in the workspace root."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "compile-ts": "tsc -p ./",
+    "watch-ts": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.0.0"
+  }
+}

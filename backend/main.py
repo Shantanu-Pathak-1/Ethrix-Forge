@@ -239,8 +239,24 @@ def parse_json_robust(content: str) -> dict:
 def local_read_file(path: str) -> str:
     if not path:
         return "Error: 'path' parameter is required. Please specify a valid file path."
+    
+    target_path = path
+    if not os.path.exists(target_path) or not os.path.isfile(target_path):
+        # Fuzzy fallback search: walk directory recursively to find the filename
+        file_name = os.path.basename(path)
+        if "." in file_name:
+            ignore_dirs = {".git", "node_modules", "venv", ".venv", "__pycache__", "build", "dist", ".gemini"}
+            found_path = None
+            for root, dirs, files in os.walk("."):
+                dirs[:] = [d for d in dirs if d not in ignore_dirs]
+                if file_name in files:
+                    found_path = os.path.join(root, file_name)
+                    break
+            if found_path:
+                target_path = found_path
+
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(target_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         return f"Error reading file '{path}': {str(e)}"
@@ -250,10 +266,25 @@ def local_write_file(path: str, content: str) -> str:
         return "Error: 'path' parameter is required. Please specify a valid target file path."
     if content is None:
         return "Error: 'content' parameter is required. Please specify the text content to write."
+        
+    target_path = path
+    if not os.path.exists(target_path) or not os.path.isfile(target_path):
+        file_name = os.path.basename(path)
+        if "." in file_name:
+            ignore_dirs = {".git", "node_modules", "venv", ".venv", "__pycache__", "build", "dist", ".gemini"}
+            found_path = None
+            for root, dirs, files in os.walk("."):
+                dirs[:] = [d for d in dirs if d not in ignore_dirs]
+                if file_name in files:
+                    found_path = os.path.join(root, file_name)
+                    break
+            if found_path:
+                target_path = found_path
+
     try:
-        with open(path, "w", encoding="utf-8") as f:
+        with open(target_path, "w", encoding="utf-8") as f:
             f.write(content)
-        return f"Success: Wrote content to file '{path}' successfully."
+        return f"Success: Wrote content to file '{target_path}' successfully."
     except Exception as e:
         return f"Error writing to file '{path}': {str(e)}"
 
@@ -592,7 +623,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ethrix Unix Launcher
+# Invokes python3 on the cli/ethrix.py script with all arguments passed.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "${SCRIPT_DIR}/cli/ethrix.py" "$@"

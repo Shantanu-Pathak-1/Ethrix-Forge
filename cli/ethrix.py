@@ -933,6 +933,22 @@ def find_referenced_files(text: str) -> List[str]:
                 if abs_path not in found_normalized:
                     found_normalized.add(abs_path)
                     found.append(os.path.normpath(cleaned))
+        else:
+            # Fuzzy fallback search: check if user typed only the file name (e.g. "buggy_code.py")
+            # and search recursively in the current working directory (excluding common ignore folders)
+            file_name = os.path.basename(cleaned)
+            if "." in file_name:
+                ignore_dirs = {".git", "node_modules", "venv", ".venv", "__pycache__", "build", "dist", ".gemini"}
+                for root, dirs, files in os.walk("."):
+                    # Modify dirs in-place to skip ignore_dirs
+                    dirs[:] = [d for d in dirs if d not in ignore_dirs]
+                    if file_name in files:
+                        candidate = os.path.join(root, file_name)
+                        abs_path = os.path.abspath(candidate)
+                        if abs_path not in found_normalized:
+                            found_normalized.add(abs_path)
+                            found.append(os.path.normpath(candidate))
+                            break
     return found
 
 
