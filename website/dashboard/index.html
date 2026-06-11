@@ -2253,6 +2253,24 @@
         dz.addEventListener('drop', e => { dz.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
       }
       const ci = document.getElementById('code-input');
+      const ls = document.getElementById('lang-select');
+
+      // Load saved code
+      if (ci) {
+        const savedCode = localStorage.getItem('dashboard_code');
+        if (savedCode) {
+          ci.value = savedCode;
+        }
+      }
+
+      // Load saved language
+      if (ls) {
+        const savedLang = localStorage.getItem('dashboard_lang');
+        if (savedLang) {
+          ls.value = savedLang;
+        }
+      }
+
       if (ci) {
         ci.addEventListener('keydown', function (e) {
           if (e.key === 'Tab') {
@@ -2261,13 +2279,37 @@
             this.value = this.value.substring(0, s) + '  ' + this.value.substring(end);
             this.selectionStart = this.selectionEnd = s + 2;
             renderLineNumbers();
+            localStorage.setItem('dashboard_code', this.value);
           }
         });
-        ci.addEventListener('input', renderLineNumbers);
+        ci.addEventListener('input', () => {
+          renderLineNumbers();
+          localStorage.setItem('dashboard_code', ci.value);
+        });
         ci.addEventListener('click', renderLineNumbers);
       }
-      const ls = document.getElementById('lang-select');
-      if (ls) { ls.addEventListener('change', e => updateLangBadge(e.target.value)); updateLangBadge(ls.value); }
+
+      if (ls) {
+        ls.addEventListener('change', e => {
+          updateLangBadge(e.target.value);
+          localStorage.setItem('dashboard_lang', e.target.value);
+        });
+        updateLangBadge(ls.value);
+      }
+
+      // Load saved report
+      const savedReport = localStorage.getItem('dashboard_report');
+      if (savedReport) {
+        currentMarkdown = savedReport;
+        const outputRendered = document.getElementById('output-rendered');
+        const outputRaw = document.getElementById('output-raw');
+        if (outputRendered) outputRendered.innerHTML = parseMarkdown(currentMarkdown);
+        if (outputRaw) outputRaw.textContent = currentMarkdown;
+        showOutput();
+        if (ci && ci.value) {
+          animateMetrics(ci.value, 'analyze', false);
+        }
+      }
 
       // Load saved Groq API Key
       const savedKey = localStorage.getItem('groq_api_key');
@@ -2458,6 +2500,7 @@
 
       await new Promise(r => setTimeout(r, 250));
       currentMarkdown = reportMarkdown;
+      localStorage.setItem('dashboard_report', currentMarkdown);
       document.getElementById('output-rendered').innerHTML = parseMarkdown(currentMarkdown);
       document.getElementById('output-raw').textContent = currentMarkdown;
       setStatusDot(isOffline ? 'error' : 'done');
@@ -2473,6 +2516,9 @@
       document.getElementById('code-input').value = '';
       renderLineNumbers(); clearFile();
       currentMarkdown = ''; showIdle(); setStatusDot('idle');
+      localStorage.removeItem('dashboard_code');
+      localStorage.removeItem('dashboard_lang');
+      localStorage.removeItem('dashboard_report');
       document.getElementById('output-meta').textContent = 'No report yet';
       document.getElementById('perf-panel').classList.add('hidden');
     }

@@ -45,15 +45,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const langSelect = document.getElementById('lang-select');
   const codeInput = document.getElementById('code-input');
 
+  // Load saved code
+  if (codeInput) {
+    const savedCode = localStorage.getItem('landing_code');
+    if (savedCode) {
+      codeInput.value = savedCode;
+    }
+  }
+
+  // Load saved language
+  if (langSelect) {
+    const savedLang = localStorage.getItem('landing_lang');
+    if (savedLang) {
+      langSelect.value = savedLang;
+    }
+  }
+
   if (langSelect) {
     langSelect.addEventListener('change', (e) => {
       updateLangBadge(e.target.value);
+      localStorage.setItem('landing_lang', e.target.value);
     });
     updateLangBadge(langSelect.value);
   }
 
   if (codeInput) {
-    codeInput.addEventListener('input', renderLineNumbers);
+    codeInput.addEventListener('input', () => {
+      renderLineNumbers();
+      localStorage.setItem('landing_code', codeInput.value);
+    });
     codeInput.addEventListener('keyup', renderLineNumbers);
     codeInput.addEventListener('click', renderLineNumbers);
     codeInput.addEventListener('scroll', () => {
@@ -70,10 +90,25 @@ document.addEventListener('DOMContentLoaded', () => {
         this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
         this.selectionStart = this.selectionEnd = start + 2;
         renderLineNumbers();
+        localStorage.setItem('landing_code', this.value);
       }
     });
 
     renderLineNumbers();
+  }
+
+  // Load saved report
+  const savedReport = localStorage.getItem('landing_report');
+  if (savedReport) {
+    currentMarkdown = savedReport;
+    const outputRendered = document.getElementById('output-rendered');
+    const outputRaw = document.getElementById('output-raw');
+    if (outputRendered) outputRendered.innerHTML = parseMarkdown(currentMarkdown);
+    if (outputRaw) outputRaw.textContent = currentMarkdown;
+    showOutput();
+    if (codeInput && codeInput.value) {
+      animateMetrics(codeInput.value, 'analyze', false);
+    }
   }
 
   // File dropzone listeners
@@ -232,6 +267,9 @@ function clearEditor() {
   }
   clearFile();
   currentMarkdown = '';
+  localStorage.removeItem('landing_code');
+  localStorage.removeItem('landing_lang');
+  localStorage.removeItem('landing_report');
   showIdle();
   setStatusDot('idle');
   document.getElementById('output-meta').textContent = 'No report yet';
@@ -453,6 +491,7 @@ async function runAction(action) {
   await new Promise(resolve => setTimeout(resolve, 250));
 
   currentMarkdown = reportMarkdown;
+  localStorage.setItem('landing_report', currentMarkdown);
   document.getElementById('output-rendered').innerHTML = parseMarkdown(currentMarkdown);
   document.getElementById('output-raw').textContent = currentMarkdown;
 
