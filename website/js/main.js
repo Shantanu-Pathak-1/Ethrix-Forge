@@ -6,12 +6,35 @@
 let currentMarkdown = '';
 let outputTab = 'rendered';
 
-function getBackendUrl() {
-  // Auto-detect environment: local vs production
+let backendUrl = 'https://ethrix-forge.onrender.com';
+let backendDetected = false;
+
+async function detectBackend() {
+  if (backendDetected) return;
   const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
   
-  return isLocal ? 'http://127.0.0.1:8000' : 'https://ethrix-forge.onrender.com';
+  if (isLocal) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch('http://127.0.0.1:8000/ping', { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        backendUrl = 'http://127.0.0.1:8000';
+      }
+    } catch (e) {
+      console.log("Local backend on port 8000 unreachable. Using production Render backend.");
+    }
+  }
+  backendDetected = true;
+}
+
+// Start detection immediately
+detectBackend();
+
+function getBackendUrl() {
+  return backendUrl;
 }
 
 // ── Language badges & color schemes ───────────────
@@ -379,6 +402,7 @@ function parseMarkdown(md) {
 
 // ── Run Analysis Action ───────────────────────────
 async function runAction(action) {
+  await detectBackend();
   const codeInput = document.getElementById('code-input');
   const code = codeInput.value.trim();
   if (!code) {

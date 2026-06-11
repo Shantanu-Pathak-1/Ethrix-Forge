@@ -2072,12 +2072,35 @@
       document.getElementById('sidebar-overlay').classList.remove('visible');
     }
 
-    function getBackendUrl() {
-      // Auto-detect environment: local vs production
+    let backendUrl = 'https://ethrix-forge.onrender.com';
+    let backendDetected = false;
+
+    async function detectBackend() {
+      if (backendDetected) return;
       const hostname = window.location.hostname;
       const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || window.location.protocol === 'file:';
       
-      return isLocal ? 'http://127.0.0.1:8000' : 'https://ethrix-forge.onrender.com';
+      if (isLocal) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          const res = await fetch('http://127.0.0.1:8000/ping', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            backendUrl = 'http://127.0.0.1:8000';
+          }
+        } catch (e) {
+          console.log("Local backend on port 8000 unreachable. Using production Render backend.");
+        }
+      }
+      backendDetected = true;
+    }
+
+    // Start detection immediately
+    detectBackend();
+
+    function getBackendUrl() {
+      return backendUrl;
     }
 
     function getApiHeaders() {
@@ -2455,6 +2478,7 @@
 
     // ── Run Action ──────────────────────────────────────
     async function runAction(action) {
+      await detectBackend();
       const ci = document.getElementById('code-input');
       const code = ci.value.trim();
       if (!code) {
@@ -2587,6 +2611,7 @@
 
     // ── Backend Health ──────────────────────────────────
     async function checkBackendHealth() {
+      await detectBackend();
       const statusEl = document.getElementById('backend-status');
       try {
         const savedKey = localStorage.getItem('groq_api_key');
@@ -2680,6 +2705,7 @@
     }
 
     async function sendChatMessage() {
+      await detectBackend();
       const inp = document.getElementById('chat-input');
       const msg = inp.value.trim();
       if (!msg && selectedChatFiles.length === 0) return;
