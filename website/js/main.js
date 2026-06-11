@@ -370,7 +370,31 @@ function setStatusDot(state) {
 
 // ── Markdown Parser ───────────────────────────────
 function parseMarkdown(md) {
-  let html = md
+  if (!md) return '';
+  
+  // 1. Extract and protect code blocks
+  const codeBlocks = [];
+  let tempMd = md.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const placeholder = `<!--CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}-->`;
+    codeBlocks.push({
+      lang: lang || 'text',
+      code: code
+    });
+    return placeholder;
+  });
+
+  // Helper to escape HTML characters
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // 2. Parse general markdown elements on the rest of the text
+  let html = tempMd
     // Headings
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
@@ -385,18 +409,36 @@ function parseMarkdown(md) {
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     // Blockquotes
     .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
-    // Standard Badges
+    // Standard Badges (Ethrix specific)
     .replace(/\[CRITICAL\]/g, '<span class="badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> CRITICAL</span>')
-    .replace(/\[WARN\]/g,     '<span class="badge-warn"><i class="fa-solid fa-circle-exclamation"></i> WARN</span>')
-    .replace(/\[OK\]/g,       '<span class="badge-ok"><i class="fa-solid fa-circle-check"></i> OK</span>')
-    .replace(/\[INFO\]/g,     '<span class="badge-info"><i class="fa-solid fa-circle-info"></i> INFO</span>')
-    // List Items
+    .replace(/\[WARN\]/g, '<span class="badge-warn"><i class="fa-solid fa-circle-exclamation"></i> WARN</span>')
+    .replace(/\[OK\]/g, '<span class="badge-ok"><i class="fa-solid fa-circle-check"></i> OK</span>')
+    .replace(/\[INFO\]/g, '<span class="badge-info"><i class="fa-solid fa-circle-info"></i> INFO</span>')
+    // List items
     .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
-    // Paragraph wrapper for unwrapped strings
-    .replace(/^(?!<[a-z])(\S.+)$/gm, '<p>$1</p>')
-    // Remove blank wrappers
+    // Wrap adjacent list items in <ul>
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`)
+    // Wrap paragraphs (lines not starting with HTML tags or list markers or placeholders)
+    .replace(/^(?!<[a-z])(?!<!--CODE_BLOCK)(?!<ul>)(?!<hr>)(\S.+)$/gm, '<p>$1</p>')
     .replace(/<p><\/p>/g, '');
+
+  // 3. Re-insert protected code blocks
+  html = html.replace(/<!--CODE_BLOCK_PLACEHOLDER_(\d+)-->/g, (match, idx) => {
+    const block = codeBlocks[parseInt(idx, 10)];
+    const escapedCode = escapeHtml(block.code);
+    // Premium looking code block container with a copy button
+    return `
+      <div class="relative my-4 group overflow-hidden rounded-xl border border-[var(--border)] bg-slate-950 font-mono text-xs">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-[var(--border)] bg-slate-900 text-slate-400 select-none">
+          <span class="text-[10px] font-bold uppercase tracking-wider">${block.lang}</span>
+          <button onclick="navigator.clipboard.writeText(this.nextElementSibling.value).then(() => { this.textContent = '✓ Copied'; setTimeout(() => this.textContent = 'Copy', 2000); })" class="text-[10px] font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer">Copy</button>
+          <textarea class="hidden">${block.code}</textarea>
+        </div>
+        <pre class="p-4 overflow-x-auto text-slate-300"><code class="language-${block.lang}">${escapedCode}</code></pre>
+      </div>
+    `;
+  });
+
   return html;
 }
 
