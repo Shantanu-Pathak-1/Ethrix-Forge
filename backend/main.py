@@ -1047,13 +1047,17 @@ async def fix_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
-        "You are an expert software engineer specializing in refactoring and optimization. "
-        "Review the provided code and generate a perfectly refactored and optimized version. "
-        "Fix all logical bugs, handle edge cases, and improve readability and performance. "
+        "You are an expert software engineer specializing in refactoring, debugging, and optimization. "
+        "Review the provided code and perform the following tasks:\n"
+        "1. Check if the code has any logical bugs, syntax errors, security vulnerabilities, or performance bottlenecks. If bugs/errors are present, fix them.\n"
+        "2. If the code is already correct, optimized, and contains no bugs or errors, do not make arbitrary refactoring changes. "
+        "Instead, set the `refactored_code` value exactly to the original input code, and in the `explanation`, clearly state that the code is completely correct, healthy, and bug-free, and list any optional suggestions/improvements for the developer.\n"
+        "3. You MUST NEVER truncate, summarize, or omit the refactored code with placeholders or excuses like 'for brevity' or 'the code is too extensive'. "
+        "If you perform any refactoring or bug fixes, you MUST provide the complete, fully functional refactored code.\n\n"
         "You MUST return your response strictly as a JSON object matching the following structure:\n"
         "{\n"
-        '  "refactored_code": "The fully corrected and optimized version of the input code",\n'
-        '  "explanation": "Detailed step-by-step markdown explanation of the optimizations and corrections made"\n'
+        '  "refactored_code": "The fully corrected and optimized version of the input code (or the original code if no fixes are needed)",\n'
+        '  "explanation": "Detailed step-by-step markdown explanation of the fixes/refactoring made, OR a clear explanation that the code is already correct and bug-free, followed by optional suggestions for improvement."\n'
         "}\n\n"
         "CRITICAL JSON ESCAPING RULE:\n"
         "All double quotes (\") inside any JSON string values (including code snippets and explanations) MUST be escaped with a single backslash (e.g., \\\").\n"
@@ -1093,11 +1097,12 @@ async def docgen_code(payload: CodePayload):
     
     system_instruction = (
         "You are a technical writer and software documentation expert. "
-        "Analyze the provided code and add professional inline comments and standard docstrings (Google or Sphinx style) for functions, classes, and methods. "
+        "Analyze the provided code and add professional inline comments and standard docstrings (Google or Sphinx style) for functions, classes, and methods.\n"
+        "You MUST NEVER truncate, summarize, or omit the documented code with placeholders or excuses like 'for brevity' or 'the code is too extensive'. Always return the complete documented code.\n\n"
         "Additionally, write a concise, clear conventional git commit message that represents this documentation/refactoring change. "
         "You MUST return your response strictly as a JSON object matching the following structure:\n"
         "{\n"
-        '  "documented_code": "The input code modified to include high-quality inline comments and Google/Sphinx style docstrings",\n'
+        '  "documented_code": "The input code modified to include high-quality inline comments and Google/Sphinx style docstrings (never truncated or omitted)",\n'
         '  "commit_message": "A conventional git commit message (e.g. docs: add inline documentation to user data parser)"\n'
         "}\n\n"
         "CRITICAL JSON ESCAPING RULE:\n"
