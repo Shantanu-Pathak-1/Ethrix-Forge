@@ -1187,12 +1187,18 @@ def fix_code(payload: CodePayload):
     
     system_instruction = (
         "You are an elite software engineer. Your task is to FIX bugs, syntax errors, logical issues, or security risks in the provided code.\n"
-        "Follow these rules strictly:\n"
-        "1. MINIMAL TEXT: Give a very brief, minimal text explanation. Do not write long essays or lists. Focus almost entirely on the code.\n"
-        "2. IF NO BUGS: If the code is already correct and has no bugs, security risks, or logical errors, set the `refactored_code` value strictly to \"\" (empty string), and set `explanation` to a simple message like 'Your code is completely healthy and bug-free!'\n"
+        "You MUST return your response strictly as a JSON object matching the following structure:\n"
+        "{\n"
+        '  "refactored_code": "The corrected/optimized function, class, code block, or empty string if no bugs are found",\n'
+        '  "explanation": "A very brief explanation of the fix, or healthy message if no bugs are found"\n'
+        "}\n\n"
+        "Rules:\n"
+        "1. MINIMAL TEXT: Give a very brief, minimal text explanation. Focus almost entirely on the code.\n"
+        "2. IF NO BUGS: If the code has no bugs, security risks, or logical errors, set `refactored_code` strictly to \"\" (empty string), and set `explanation` to 'Your code is completely healthy and bug-free!'\n"
         "3. IF BUGS FOUND: Fix all bugs. Return the corrected code in `refactored_code` and a very brief explanation of the fix in `explanation`.\n"
         "4. LARGE CODE HANDLING: If the input code is large (or a large chunk), do NOT reproduce the entire unchanged file. "
-        "Instead, return ONLY the specific updated function, class, or code block that was modified, so the user can easily see what to replace."
+        "Instead, return ONLY the specific updated function, class, or code block that was modified, so the user can easily see what to replace.\n"
+        "5. Standard JSON compliance: Make sure the output is valid JSON, and all double quotes inside string values are escaped."
     )
 
     chunks = chunk_code_backend(payload.code, chunk_size=300)
