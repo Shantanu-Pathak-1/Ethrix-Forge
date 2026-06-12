@@ -1668,6 +1668,16 @@
           <span class="nav-tooltip">Ethrix AI Chat</span>
         </div>
 
+        <!-- History sub-item -->
+        <div id="nav-history" onclick="switchTab('history')" class="nav-item" title="Chat History"
+          style="margin-left: 12px; margin-top: -2px; border-left: 2px solid rgba(var(--primary-rgb),0.2); border-radius: 0 8px 8px 0; padding-left: 10px;">
+          <div class="nav-icon" style="width:28px; height:28px; min-width:28px; font-size:11px;">
+            <i class="fa-solid fa-clock-rotate-left text-[11px]"></i>
+          </div>
+          <span class="sb-label text-[11px] font-medium opacity-80">Chat History</span>
+          <span class="nav-tooltip">Chat History</span>
+        </div>
+
         <p
           class="sb-section-label text-[10px] font-bold text-slate-400 dark:text-slate-500 px-3 uppercase tracking-wider mt-4 mb-2">
           Config</p>
@@ -1990,7 +2000,7 @@
              ║ VIEW 2: AI CHAT CONSOLE              ║
              ╚═══════════════════════════════════════╝ -->
         <section id="view-chat" class="view-pane hidden flex-1 min-h-0 flex flex-col gap-4 animate-fade-in">
-          <div class="max-w-5xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
+          <div class="max-w-4xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
             <div>
               <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white">AI Chat Console</h1>
               <p class="text-xs text-slate-500 mt-1 font-medium">Explain bugs, refactor logic, or ask coding questions.</p>
@@ -2000,84 +2010,82 @@
             </button>
           </div>
 
-          <div class="max-w-5xl mx-auto w-full flex-1 min-h-0 h-full">
-            <div class="chat-wrap glass h-full w-full flex" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+          <div class="max-w-4xl mx-auto w-full flex-1 min-h-0 h-full">
+            <div class="chat-wrap glass h-full w-full" style="box-shadow: 0 12px 40px rgba(0,0,0,0.06);">
+              <!-- Chat top bar -->
+              <div
+                class="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[rgba(var(--muted-rgb),0.5)] flex-shrink-0">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                    <img src="../logo.png" class="h-8 w-auto object-contain rounded-lg" alt="Ethrix Logo" />
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-slate-900 dark:text-white">Ethrix Review Assistant</div>
+                    <div class="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono mt-0.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      Online
+                    </div>
+                  </div>
+                </div>
+                <!-- Model Variant Select for Chat -->
+                <div class="flex items-center gap-2">
+                  <select id="setting-model-chat"
+                    class="bg-[var(--muted)] border border-[var(--border)] text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
+                    <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                    <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                  </select>
+                </div>
+              </div>
 
-              <!-- History Sidebar -->
-              <div class="chat-history-panel">
-                <div class="chat-history-header">
-                  <span class="chat-history-title">History</span>
-                  <button onclick="clearChat()" class="btn-new-chat">
-                    <i class="fa-solid fa-plus" style="font-size:8px;"></i> New
+              <!-- Messages -->
+              <div id="chat-body-container" class="chat-body">
+                <div class="flex flex-col gap-1">
+                  <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. Send me a snippet, ask
+                    me to explain a bug, or inquire about coding conventions.</div>
+                  <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
+                </div>
+              </div>
+
+              <!-- Chat Input -->
+              <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
+                <div id="chat-attachments-container" class="flex flex-wrap gap-2 mb-1"></div>
+                <div id="chat-attachment-preview" class="hidden"></div>
+                <div class="flex items-end gap-2.5 w-full">
+                  <button id="btn-chat-upload" onclick="document.getElementById('chat-file-input').click()"
+                          class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-500/10 border border-[var(--border)] text-slate-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all cursor-pointer flex-shrink-0"
+                          title="Upload code file">
+                    <i class="fa-solid fa-paperclip text-sm"></i>
+                  </button>
+                  <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)" multiple>
+                  <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+                  <button id="btn-chat-send" onclick="sendChatMessage()" class="chat-send">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
                   </button>
                 </div>
-                <div id="history-list" class="history-list">
-                  <div class="history-empty">No history yet.<br>Start chatting!</div>
-                </div>
               </div>
+            </div>
+          </div>
+        </section>
 
-              <!-- Chat Main -->
-              <div class="flex flex-col flex-1 min-w-0 h-full">
-                <!-- Chat top bar -->
-                <div
-                  class="flex items-center justify-between gap-3 px-5 py-3 border-b border-[var(--border)] bg-[rgba(var(--muted-rgb),0.5)] flex-shrink-0">
-                  <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                      <img src="../logo.png" class="h-8 w-auto object-contain rounded-lg" alt="Ethrix Logo" />
-                    </div>
-                    <div>
-                      <div class="text-xs font-bold text-slate-900 dark:text-white">Ethrix Review Assistant</div>
-                      <div class="flex items-center gap-1.5 text-[9.5px] text-slate-400 font-mono mt-0.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Online
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <!-- Model Variant Select for Chat -->
-                  <div class="flex items-center gap-2">
-                    <select id="setting-model-chat"
-                      class="bg-[var(--muted)] border border-[var(--border)] text-slate-700 dark:text-slate-300 text-xs px-2.5 py-1.5 rounded-xl outline-none focus:border-violet-500 font-mono cursor-pointer transition-colors">
-                      <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
-                      <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
-                    </select>
-                  </div>
-                </div>
+        <!-- ╔═══════════════════════════════════════╗
+             ║ VIEW 2B: CHAT HISTORY                ║
+             ╚═══════════════════════════════════════╝ -->
+        <section id="view-history" class="view-pane hidden flex-1 min-h-0 flex flex-col gap-4 animate-fade-in">
+          <div class="max-w-4xl mx-auto w-full flex items-start justify-between gap-4 flex-wrap flex-shrink-0">
+            <div>
+              <h1 class="text-xl font-bold font-display text-slate-900 dark:text-white">Chat History</h1>
+              <p class="text-xs text-slate-500 mt-1 font-medium">Your past Ethrix AI conversations, saved automatically.</p>
+            </div>
+            <button onclick="clearChat(); switchTab('chat')" class="btn-primary text-xs flex-shrink-0">
+              <i class="fa-solid fa-plus"></i> New Chat
+            </button>
+          </div>
 
-                <!-- Messages -->
-                <div id="chat-body-container" class="chat-body">
-                  <div class="flex flex-col gap-1">
-                    <div class="msg msg-model">👋 Hi! I'm Ethrix, your AI Code Review Assistant. Send me a snippet, ask
-                      me to explain a bug, or inquire about coding conventions.</div>
-                    <div class="msg-time mt-1 pl-1">Ethrix · Just now</div>
-                  </div>
-                </div>
-
-                <!-- Chat Input -->
-                <div class="chat-input-wrap flex-col items-stretch gap-2 flex-shrink-0">
-                  <!-- Attachment preview area -->
-                  <div id="chat-attachments-container" class="flex flex-wrap gap-2 mb-1"></div>
-                  <div id="chat-attachment-preview" class="hidden"></div>
-
-                  <!-- Input Row -->
-                  <div class="flex items-end gap-2.5 w-full">
-                    <!-- File upload button -->
-                    <button id="btn-chat-upload" onclick="document.getElementById('chat-file-input').click()" 
-                            class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-500/10 border border-[var(--border)] text-slate-500 hover:text-violet-500 hover:bg-violet-500/10 transition-all cursor-pointer flex-shrink-0"
-                            title="Upload code file">
-                      <i class="fa-solid fa-paperclip text-sm"></i>
-                    </button>
-                    <input type="file" id="chat-file-input" class="hidden" onchange="handleChatFileSelect(event)" multiple>
-
-                    <textarea id="chat-input" class="chat-inp" placeholder="Ask Ethrix anything... (or attach a file)" rows="1"
-                      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
-                    
-                    <button id="btn-chat-send" onclick="sendChatMessage()" class="chat-send">
-                      <i class="fa-solid fa-paper-plane text-sm"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div class="max-w-4xl mx-auto w-full flex-1 min-h-0 overflow-y-auto">
+            <!-- History Grid -->
+            <div id="history-list" class="space-y-1 pb-6">
+              <div class="history-empty">No past chats yet. Start a new conversation!</div>
             </div>
           </div>
         </section>
@@ -2231,18 +2239,23 @@
   ════════════════════════════════════════════ -->
   <script>
     // ── SPA Navigation ─────────────────────────────────
-    const views = ['studio', 'chat', 'integrations'];
+    const views = ['studio', 'chat', 'history', 'integrations'];
 
     function switchTab(target) {
       views.forEach(v => {
         document.getElementById('view-' + v).classList.toggle('hidden', v !== target);
         document.getElementById('nav-' + v).classList.toggle('active', v === target);
       });
-      const labels = { studio: 'Code Analyzer', chat: 'AI Chat Console', integrations: 'Model & API Settings' };
-      document.getElementById('breadcrumb-active').textContent = labels[target];
+      const labels = {
+        studio: 'Code Analyzer',
+        chat: 'AI Chat Console',
+        history: 'Chat History',
+        integrations: 'Model & API Settings'
+      };
+      document.getElementById('breadcrumb-active').textContent = labels[target] || target;
       document.getElementById('sidebar').classList.remove('open');
       document.getElementById('sidebar-overlay').classList.remove('visible');
-      if (target === 'chat') loadChatHistory();
+      if (target === 'chat' || target === 'history') loadChatHistory();
     }
 
     let backendUrl = 'https://ethrix-forge.onrender.com';
@@ -2894,11 +2907,25 @@
         const res = await fetch(`${getBackendUrl()}/chat/history?email=${encodeURIComponent(email)}`, {
           headers: getApiHeaders()
         });
-        if (!res.ok) { listEl.innerHTML = '<div class="history-empty">Could not load history.</div>'; return; }
+        if (!res.ok) {
+          listEl.innerHTML = '<div class="text-xs text-slate-500 text-center py-8">Could not load history.</div>';
+          return;
+        }
         const data = await res.json();
         const sessions = data.sessions || [];
         if (sessions.length === 0) {
-          listEl.innerHTML = '<div class="history-empty">No past chats yet.<br>Start a new conversation!</div>';
+          listEl.innerHTML = `
+            <div class="flex flex-col items-center justify-center text-center py-16 px-4 glass rounded-2xl border border-[var(--border)] mt-4">
+              <div class="w-12 h-12 rounded-full bg-slate-500/10 text-slate-400 flex items-center justify-center mb-3">
+                <i class="fa-regular fa-comment-dots text-lg"></i>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">No chat history yet</h3>
+              <p class="text-xs text-slate-500 mt-1 max-w-[260px]">Start a new conversation in the AI Chat tab to save your history here.</p>
+              <button onclick="clearChat(); switchTab('chat')" class="btn-primary text-xs mt-4">
+                <i class="fa-solid fa-plus"></i> New Chat
+              </button>
+            </div>
+          `;
           return;
         }
         // Date grouping helpers
@@ -2915,27 +2942,49 @@
             else if (sd.getTime() === yesterday.getTime()) group = 'Yesterday';
           }
           if (group !== lastGroup) {
-            html += `<div class="history-date-label">${group}</div>`;
+            html += `<div class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono mt-6 mb-3 pl-1">${group}</div>`;
             lastGroup = group;
           }
           const isActive = s.session_id === currentSessionId;
           const titleSafe = esc(s.title || 'Untitled');
-          html += `<div class="history-item ${isActive ? 'active' : ''}" onclick="loadSession(${JSON.stringify(s).replace(/"/g, '&quot;')})" data-sid="${s.session_id}">
-            <i class="fa-regular fa-comment-dots text-[10px] opacity-50 flex-shrink-0"></i>
-            <span class="history-item-title" title="${titleSafe}">${titleSafe}</span>
-            <button class="btn-del-session" onclick="deleteSession('${s.session_id}', event)" title="Delete">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+          const formattedDate = d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Restored';
+          
+          html += `
+          <div class="history-card flex items-center justify-between p-3.5 mb-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-violet-500/30 hover:bg-violet-500/5 transition-all duration-200 cursor-pointer ${isActive ? 'ring-2 ring-violet-500/20 border-violet-500/40 bg-violet-500/5' : ''}"
+               onclick="loadSession(${JSON.stringify(s).replace(/"/g, '&quot;')})" data-sid="${s.session_id}">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="w-9 h-9 rounded-lg bg-violet-500/10 text-violet-500 flex items-center justify-center flex-shrink-0">
+                <i class="fa-regular fa-comment-dots text-base"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate pr-4" title="${titleSafe}">${titleSafe}</div>
+                <div class="text-[10px] text-slate-400 font-mono mt-0.5">${formattedDate}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button onclick="deleteSession('${s.session_id}', event)" 
+                      class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                      title="Delete chat session">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+              </button>
+            </div>
           </div>`;
         });
         listEl.innerHTML = html;
-      } catch { listEl.innerHTML = '<div class="history-empty">History unavailable.</div>'; }
+      } catch (err) { 
+        console.error(err);
+        listEl.innerHTML = '<div class="text-xs text-slate-500 text-center py-8">History temporarily unavailable.</div>'; 
+      }
     }
 
     function loadSession(session) {
-      // Mark active in sidebar
-      document.querySelectorAll('#history-list .history-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.sid === session.session_id);
+      // Mark active in sidebar list
+      document.querySelectorAll('#history-list .history-card').forEach(el => {
+        const isMatched = el.dataset.sid === session.session_id;
+        el.classList.toggle('ring-2', isMatched);
+        el.classList.toggle('ring-violet-500/20', isMatched);
+        el.classList.toggle('border-violet-500/40', isMatched);
+        el.classList.toggle('bg-violet-500/5', isMatched);
       });
       // Restore session into runtime state
       currentSessionId = session.session_id;
@@ -2967,6 +3016,7 @@
         body.appendChild(el);
       });
       body.scrollTop = body.scrollHeight;
+      switchTab('chat');
     }
 
     async function deleteSession(sessionId, e) {
