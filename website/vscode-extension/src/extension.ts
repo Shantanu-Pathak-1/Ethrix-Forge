@@ -58,17 +58,16 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Auto-start backend server if configured locally and offline
-    const config = vscode.workspace.getConfiguration('ethrix');
-    const backendUrl = config.get<string>('backendUrl', 'http://127.0.0.1:8000');
-    if (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) {
-        checkBackendAlive(backendUrl).then(alive => {
+    // Auto-start backend server if needed (either configured locally or as a fallback)
+    getActiveBackendUrl().then(async (activeUrl) => {
+        if (activeUrl.includes('localhost') || activeUrl.includes('127.0.0.1')) {
+            const alive = await checkBackendAlive(activeUrl);
             if (!alive) {
                 console.log('Local FastAPI server is offline at startup. Auto-starting...');
                 startBackendServer(false, true); // silent auto-start on launch
             }
-        });
-    }
+        }
+    });
 
     // Register Code Action Provider for sending selection to chat
     context.subscriptions.push(
@@ -201,7 +200,7 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
     }
 
     const config = vscode.workspace.getConfiguration('ethrix');
-    const backendUrl = config.get<string>('backendUrl', 'http://127.0.0.1:8000');
+    const activeBackendUrl = await getActiveBackendUrl();
     const provider = config.get<string>('provider', 'online');
     const model = config.get<string>('model', 'llama-3.3-70b-versatile');
     const groqApiKey = config.get<string>('groqApiKey', '');
@@ -209,9 +208,9 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
     const languageId = editor.document.languageId;
 
     // Check if server is running
-    const isAlive = await checkBackendAlive(backendUrl);
+    const isAlive = await checkBackendAlive(activeBackendUrl);
     if (!isAlive) {
-        if (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) {
+        if (activeBackendUrl.includes('localhost') || activeBackendUrl.includes('127.0.0.1')) {
             const startNow = await vscode.window.showWarningMessage(
                 'Ethrix backend is not running. Would you like to start it in the background?',
                 'Yes, start server',
@@ -226,7 +225,7 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
                 return;
             }
         } else {
-            vscode.window.showErrorMessage(`Ethrix Core server at ${backendUrl} is unreachable. Please check your network or configuration settings.`);
+            vscode.window.showErrorMessage(`Ethrix Core server at ${activeBackendUrl} is unreachable. Please check your network or configuration settings.`);
             return;
         }
     }
@@ -237,7 +236,7 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
         cancellable: false
     }, async (progress) => {
         try {
-            const endpoint = `${backendUrl}/${actionType}`;
+            const endpoint = `${activeBackendUrl}/${actionType}`;
             const headers: Record<string, string> = {
                 'Content-Type': 'application/json'
             };
@@ -321,6 +320,31 @@ export function checkBackendAlive(urlStr: string): Promise<boolean> {
     });
 }
 
+/**
+ * Resolves the active backend URL by checking the configured backendUrl first.
+ * If the configured backendUrl is a hosted Render URL (or any non-local URL) and is unreachable,
+ * it falls back to the local backend at 'http://127.0.0.1:8000'.
+ */
+export async function getActiveBackendUrl(): Promise<string> {
+    const config = vscode.workspace.getConfiguration('ethrix');
+    const configUrl = config.get<string>('backendUrl', 'https://ethrix-forge.onrender.com');
+    
+    // If the config url is already local, just use it
+    if (configUrl.includes('localhost') || configUrl.includes('127.0.0.1')) {
+        return configUrl;
+    }
+
+    // It's a remote URL. Let's check if it's alive.
+    const alive = await checkBackendAlive(configUrl);
+    if (alive) {
+        return configUrl;
+    }
+
+    // Primary hosted backend is offline/unreachable. Fallback to local.
+    console.log(`Hosted backend ${configUrl} is unreachable. Falling back to local backend.`);
+    return 'http://127.0.0.1:8000';
+}
+
 function requestPost(urlStr: string, body: any, headers: Record<string, string> = {}): Promise<{ ok: boolean; status: number; text: () => Promise<string>; json: () => Promise<any> }> {
     return new Promise((resolve, reject) => {
         try {
@@ -386,14 +410,17 @@ async function startBackendServer(interactiveShow: boolean = false, silent: bool
     }
 
     const config = vscode.workspace.getConfiguration('ethrix');
-    const backendUrl = config.get<string>('backendUrl', 'http://127.0.0.1:8000');
+    // Default fallback to 8000 if backendUrl is not local
+    const backendUrl = config.get<string>('backendUrl', 'https://ethrix-forge.onrender.com');
     
     // Parse port
     let port = '8000';
     try {
-        const urlObj = new URL(backendUrl);
-        if (urlObj.port) {
-            port = urlObj.port;
+        if (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) {
+            const urlObj = new URL(backendUrl);
+            if (urlObj.port) {
+                port = urlObj.port;
+            }
         }
     } catch {}
 
@@ -405,6 +432,21 @@ async function startBackendServer(interactiveShow: boolean = false, silent: bool
     if (!fs.existsSync(mainPyPath)) {
         // Fallback to sibling directory for development mode
         backendDir = path.resolve(extensionPath, '..', 'backend');
+        mainPyPath = path.join(backendDir, 'main.py');
+    }
+
+    if (!fs.existsSync(mainPyPath)) {
+        // Fallback to workspace root 'backend' folder
+        const root = getWorkspaceRoot();
+        if (root) {
+            backendDir = path.join(root, 'backend');
+            mainPyPath = path.join(backendDir, 'main.py');
+        }
+    }
+
+    if (!fs.existsSync(mainPyPath)) {
+        // Fallback to sibling's parent directory (website/vscode-extension structure)
+        backendDir = path.resolve(extensionPath, '..', '..', 'backend');
         mainPyPath = path.join(backendDir, 'main.py');
     }
 

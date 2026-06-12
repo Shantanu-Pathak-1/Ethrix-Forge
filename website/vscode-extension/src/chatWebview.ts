@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as cp from 'child_process';
 import * as http from 'http';
 import * as https from 'https';
-import { checkBackendAlive } from './extension';
+import { checkBackendAlive, getActiveBackendUrl } from './extension';
 
 function postJson(urlStr: string, body: any, customHeaders: Record<string, string>): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -189,7 +189,7 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
         if (!this._view) { return; }
         const config = vscode.workspace.getConfiguration('ethrix');
         const settings = {
-            backendUrl: config.get<string>('backendUrl', 'http://127.0.0.1:8000'),
+            backendUrl: config.get<string>('backendUrl', 'https://ethrix-forge.onrender.com'),
             provider: config.get<string>('provider', 'online'),
             model: config.get<string>('model', 'llama-3.3-70b-versatile'),
             groqApiKey: config.get<string>('groqApiKey', '')
@@ -216,9 +216,8 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
 
     private async checkServerStatus() {
         if (!this._view) { return; }
-        const config = vscode.workspace.getConfiguration('ethrix');
-        const backendUrl = config.get<string>('backendUrl', 'http://127.0.0.1:8000');
-        const alive = await checkBackendAlive(backendUrl);
+        const activeBackendUrl = await getActiveBackendUrl();
+        const alive = await checkBackendAlive(activeBackendUrl);
         this._view.webview.postMessage({ command: 'status', alive });
     }
 
@@ -240,7 +239,7 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
         if (!this._view) { return; }
 
         const config = vscode.workspace.getConfiguration('ethrix');
-        const backendUrl = config.get<string>('backendUrl', 'http://127.0.0.1:8000');
+        const activeBackendUrl = await getActiveBackendUrl();
         const provider = config.get<string>('provider', 'online');
         const model = config.get<string>('model', 'llama-3.3-70b-versatile');
         const groqApiKey = config.get<string>('groqApiKey', '');
@@ -330,7 +329,7 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
                 headers['X-Groq-API-Key'] = groqApiKey;
             }
 
-            const data = await postJson(`${backendUrl}/chat`, {
+            const data = await postJson(`${activeBackendUrl}/chat`, {
                 message: fullMessage,
                 history: formattedHistory,
                 provider,

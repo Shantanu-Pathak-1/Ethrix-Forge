@@ -2,7 +2,7 @@
   "name": "ethrix-forge",
   "displayName": "Ethrix Forge",
   "description": "Elite AI-based Code Reviewer and Refactoring Assistant",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "team-titans",
   "engines": {
     "vscode": "^1.80.0"
@@ -102,7 +102,7 @@
       "properties": {
         "ethrix.backendUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:8000",
+          "default": "https://ethrix-forge.onrender.com",
           "description": "URL of the Ethrix Core FastAPI backend server."
         },
         "ethrix.provider": {
