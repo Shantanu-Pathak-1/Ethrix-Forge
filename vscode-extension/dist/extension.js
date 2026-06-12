@@ -1289,7 +1289,8 @@ async function handleCodeAction(actionType) {
       if (actionType === "analyze") {
         reportMarkdown = data.raw_markdown_report || JSON.stringify(data, null, 2);
       } else if (actionType === "fix") {
-        reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report
+        if (data.refactored_code && data.refactored_code.trim()) {
+          reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report
 
 ## Original Language
 - **Language ID**: \`${languageId}\`
@@ -1303,19 +1304,40 @@ ${data.refactored_code}
 ## Optimization & Refactoring Explanation
 
 ${data.explanation || "No explanation provided."}`;
+        } else {
+          reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report
+
+\u2728 **Your code is completely healthy, correct, and bug-free!**
+
+### Explanation:
+${data.explanation || "No issues found."}`;
+        }
       } else if (actionType === "docgen") {
-        reportMarkdown = `# Ethrix Forge: Documentation & Comments Report
+        reportMarkdown = `# Ethrix Forge: Documentation & Architecture Report
 
-## Suggested Git Commit Message
-\`\`\`text
-${data.commit_message || "docs: add inline documentation"}
-\`\`\`
+## Architecture & Design Overview
+${data.architecture_overview || "No overview generated."}
 
-## Documented Code
+---
+
+## \u{1F4CB} API & Functions Reference
+${data.api_reference || "No API reference generated."}
+
+---
+
+## \u{1F680} Usage Recipes & Examples
+${data.usage_examples || "No usage examples generated."}
+
+---
+
+## \u{1F4DD} Documented Source Code
 
 \`\`\`${languageId}
 ${data.documented_code}
 \`\`\`
+
+---
+*Commit message suggestion: \`${data.commit_message || "docs: add inline documentation"}\`*
 `;
       }
       await updateReportFile(reportMarkdown);
@@ -1351,11 +1373,15 @@ async function startBackendServer(interactiveShow = false, silent = false) {
   } catch {
   }
   const extensionPath = extensionContext ? extensionContext.extensionPath : __dirname;
-  const backendDir = path2.resolve(extensionPath, "..", "backend");
-  const mainPyPath = path2.join(backendDir, "main.py");
+  let backendDir = path2.join(extensionPath, "backend");
+  let mainPyPath = path2.join(backendDir, "main.py");
+  if (!fs2.existsSync(mainPyPath)) {
+    backendDir = path2.resolve(extensionPath, "..", "backend");
+    mainPyPath = path2.join(backendDir, "main.py");
+  }
   if (!fs2.existsSync(mainPyPath)) {
     if (interactiveShow) {
-      vscode2.window.showErrorMessage(`FastAPI main.py not found in path: ${backendDir}`);
+      vscode2.window.showErrorMessage(`FastAPI main.py not found in extension directory or sibling folder.`);
     }
     return false;
   }

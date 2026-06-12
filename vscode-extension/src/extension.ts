@@ -239,14 +239,26 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
             if (actionType === 'analyze') {
                 reportMarkdown = data.raw_markdown_report || JSON.stringify(data, null, 2);
             } else if (actionType === 'fix') {
-                reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report\n\n` +
-                    `## Original Language\n- **Language ID**: \`${languageId}\`\n\n` +
-                    `## Refactored Code\n\n\`\`\`${languageId}\n${data.refactored_code}\n\`\`\`\n\n` +
-                    `## Optimization & Refactoring Explanation\n\n${data.explanation || 'No explanation provided.'}`;
+                if (data.refactored_code && data.refactored_code.trim()) {
+                    reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report\n\n` +
+                        `## Original Language\n- **Language ID**: \`${languageId}\`\n\n` +
+                        `## Refactored Code\n\n\`\`\`${languageId}\n${data.refactored_code}\n\`\`\`\n\n` +
+                        `## Optimization & Refactoring Explanation\n\n${data.explanation || 'No explanation provided.'}`;
+                } else {
+                    reportMarkdown = `# Ethrix Forge: Code Fix & Refactoring Report\n\n` +
+                        `✨ **Your code is completely healthy, correct, and bug-free!**\n\n` +
+                        `### Explanation:\n${data.explanation || 'No issues found.'}`;
+                }
             } else if (actionType === 'docgen') {
-                reportMarkdown = `# Ethrix Forge: Documentation & Comments Report\n\n` +
-                    `## Suggested Git Commit Message\n\`\`\`text\n${data.commit_message || 'docs: add inline documentation'}\n\`\`\`\n\n` +
-                    `## Documented Code\n\n\`\`\`${languageId}\n${data.documented_code}\n\`\`\`\n`;
+                reportMarkdown = `# Ethrix Forge: Documentation & Architecture Report\n\n` +
+                    `## Architecture & Design Overview\n${data.architecture_overview || 'No overview generated.'}\n\n` +
+                    `---\n\n` +
+                    `## 📋 API & Functions Reference\n${data.api_reference || 'No API reference generated.'}\n\n` +
+                    `---\n\n` +
+                    `## 🚀 Usage Recipes & Examples\n${data.usage_examples || 'No usage examples generated.'}\n\n` +
+                    `---\n\n` +
+                    `## 📝 Documented Source Code\n\n\`\`\`${languageId}\n${data.documented_code}\n\`\`\`\n\n` +
+                    `---\n*Commit message suggestion: \`${data.commit_message || 'docs: add inline documentation'}\`*\n`;
             }
 
             await updateReportFile(reportMarkdown);
@@ -292,14 +304,20 @@ async function startBackendServer(interactiveShow: boolean = false, silent: bool
         }
     } catch {}
 
-    // Find backend folder relative to the extension folder, not the active workspace root
+    // Find backend folder: check inside extension folder first (packaged mode), then check sibling (dev mode)
     const extensionPath = extensionContext ? extensionContext.extensionPath : __dirname;
-    const backendDir = path.resolve(extensionPath, '..', 'backend');
-    const mainPyPath = path.join(backendDir, 'main.py');
+    let backendDir = path.join(extensionPath, 'backend');
+    let mainPyPath = path.join(backendDir, 'main.py');
+
+    if (!fs.existsSync(mainPyPath)) {
+        // Fallback to sibling directory for development mode
+        backendDir = path.resolve(extensionPath, '..', 'backend');
+        mainPyPath = path.join(backendDir, 'main.py');
+    }
 
     if (!fs.existsSync(mainPyPath)) {
         if (interactiveShow) {
-            vscode.window.showErrorMessage(`FastAPI main.py not found in path: ${backendDir}`);
+            vscode.window.showErrorMessage(`FastAPI main.py not found in extension directory or sibling folder.`);
         }
         return false;
     }

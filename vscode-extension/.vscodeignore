@@ -1,0 +1,12 @@
+.vscode/**
+.vscode-test/**
+src/**
+tsconfig.json
+esbuild.js
+node_modules/**
+package-lock.json
+*.log
+backend/ethrix_debug.log
+backend/__pycache__/**
+backend/.env
+backend/.git/**
