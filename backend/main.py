@@ -1169,7 +1169,7 @@ def process_analyze_chunk(idx: int, chunk: str, payload: CodePayload, system_ins
             if "line_number" in risk:
                 risk["line_number"] = adjust_line_number(risk["line_number"], offset)
         
-        chunk_md = data.get("raw_markdown_report", "")
+        chunk_md = data.get("raw_markdown_report") or data.get("report") or data.get("markdown_report") or data.get("markdown") or data.get("markdown_text") or ""
         start_line = offset + 1
         end_line = min(offset + 300, total_lines)
         report_text = f"### Section: Lines {start_line} to {end_line}\n\n{chunk_md}" if chunk_md else ""
@@ -1238,7 +1238,43 @@ def analyze_code(payload: CodePayload):
         if report_text:
             markdown_reports.append(report_text)
             
-    combined_md = "\n\n---\n\n".join(markdown_reports) if markdown_reports else "No report generated."
+    if markdown_reports:
+        combined_md = "\n\n---\n\n".join(markdown_reports)
+    else:
+        # Fallback report generation if no raw_markdown_report was returned by the LLM
+        if all_bugs or all_security_risks:
+            report_lines = ["# Code Analysis Report\n"]
+            report_lines.append("Analysis completed. The following issues were identified in the codebase:\n")
+            if all_bugs:
+                report_lines.append("## 🐛 Identified Bugs & Logical Issues")
+                report_lines.append("| Severity | Line Number | Description | Suggestion |")
+                report_lines.append("|---|---|---|---|")
+                for bug in all_bugs:
+                    severity = bug.get("severity", "Medium")
+                    line_num = bug.get("line_number", "N/A")
+                    desc = bug.get("description", "No description provided.")
+                    sug = bug.get("suggestion", "No suggestion provided.")
+                    report_lines.append(f"| **{severity}** | {line_num} | {desc} | {sug} |")
+                report_lines.append("")
+            if all_security_risks:
+                report_lines.append("## 🛡️ Security Vulnerabilities")
+                report_lines.append("| Severity | Line Number | Risk Description | Remediation |")
+                report_lines.append("|---|---|---|---|")
+                for risk in all_security_risks:
+                    severity = risk.get("severity", "Medium")
+                    line_num = risk.get("line_number", "N/A")
+                    desc = risk.get("description", "No description provided.")
+                    rem = risk.get("remediation", "No remediation steps provided.")
+                    report_lines.append(f"| **{severity}** | {line_num} | {desc} | {rem} |")
+                report_lines.append("")
+            combined_md = "\n".join(report_lines)
+        else:
+            combined_md = (
+                "# Code Analysis Report\n\n"
+                "## ✨ Analysis Summary\n"
+                "No bugs or security risks were identified in the analyzed code. Your code appears to be clean, healthy, and secure!"
+            )
+
     return {
         "bugs": all_bugs,
         "security_risks": all_security_risks,
