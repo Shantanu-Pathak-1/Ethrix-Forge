@@ -12,9 +12,6 @@
     "Programming Languages",
     "Other"
   ],
-  "activationEvents": [
-    "onView:ethrixChat"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -31,7 +28,8 @@
         {
           "type": "webview",
           "id": "ethrixChat",
-          "name": "Ethrix Chat Panel"
+          "name": "Ethrix Chat Panel",
+          "icon": "resources/logo-icon.svg"
         }
       ]
     },
@@ -60,10 +58,20 @@
         "command": "ethrix-forge.focusChat",
         "title": "Ethrix: Focus Chat Panel",
         "category": "Ethrix Forge"
+      },
+      {
+        "command": "ethrix-forge.sendToChat",
+        "title": "Ethrix: Send Selection to Chat",
+        "category": "Ethrix Forge"
       }
     ],
     "menus": {
       "editor/context": [
+        {
+          "command": "ethrix-forge.sendToChat",
+          "group": "ethrix-forge@0",
+          "when": "editorHasSelection"
+        },
         {
           "command": "ethrix-forge.analyzeCode",
           "group": "ethrix-forge@1",
@@ -81,6 +89,14 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "ethrix-forge.sendToChat",
+        "key": "ctrl+alt+e",
+        "mac": "cmd+alt+e",
+        "when": "editorHasSelection"
+      }
+    ],
     "configuration": {
       "title": "Ethrix Forge",
       "properties": {

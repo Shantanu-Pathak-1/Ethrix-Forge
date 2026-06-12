@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as cp from 'child_process';
+import * as http from 'http';
+import * as https from 'https';
 import { EthrixChatProvider } from './chatWebview';
 
 let backendProcess: cp.ChildProcess | null = null;
@@ -29,6 +31,21 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('ethrix-forge.startBackend', () => startBackendServer(true)),
         vscode.commands.registerCommand('ethrix-forge.focusChat', () => {
             vscode.commands.executeCommand('ethrixChat.focus');
+        }),
+        vscode.commands.registerCommand('ethrix-forge.sendToChat', () => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor) {
+                const selection = editor.selection;
+                const text = editor.document.getText(selection);
+                const languageId = editor.document.languageId;
+                if (text && text.trim()) {
+                    chatProvider.sendSelectionToWebview(text, languageId);
+                } else {
+                    vscode.window.showWarningMessage('No text selected to send to Ethrix Chat.');
+                }
+            } else {
+                vscode.window.showErrorMessage('No active text editor found.');
+            }
         })
     );
 
@@ -52,6 +69,17 @@ export function activate(context: vscode.ExtensionContext) {
             }
         });
     }
+
+    // Register Code Action Provider for sending selection to chat
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            { pattern: '**/*' },
+            new EthrixCodeActionProvider(),
+            {
+                providedCodeActionKinds: [vscode.CodeActionKind.Refactor]
+            }
+        )
+    );
 }
 
 export function deactivate() {
@@ -217,16 +245,12 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
                 headers['X-Groq-API-Key'] = groqApiKey;
             }
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({
-                    code,
-                    language: languageId,
-                    provider,
-                    model
-                })
-            });
+            const response = await requestPost(endpoint, {
+                code,
+                language: languageId,
+                provider,
+                model
+            }, headers);
 
             if (!response.ok) {
                 const text = await response.text();
@@ -272,13 +296,82 @@ async function handleCodeAction(actionType: 'analyze' | 'fix' | 'docgen') {
 /**
  * Checks if the backend server is reachable.
  */
-export async function checkBackendAlive(url: string): Promise<boolean> {
-    try {
-        const response = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(1500) });
-        return response.status === 200;
-    } catch {
-        return false;
-    }
+export function checkBackendAlive(urlStr: string): Promise<boolean> {
+    return new Promise((resolve) => {
+        try {
+            const url = new URL(urlStr);
+            const isHttps = url.protocol === 'https:';
+            const requestLib = isHttps ? https : http;
+            
+            const req = requestLib.get(urlStr, { timeout: 1500 }, (res) => {
+                resolve(res.statusCode === 200);
+            });
+            
+            req.on('error', () => {
+                resolve(false);
+            });
+            
+            req.on('timeout', () => {
+                req.destroy();
+                resolve(false);
+            });
+        } catch {
+            resolve(false);
+        }
+    });
+}
+
+function requestPost(urlStr: string, body: any, headers: Record<string, string> = {}): Promise<{ ok: boolean; status: number; text: () => Promise<string>; json: () => Promise<any> }> {
+    return new Promise((resolve, reject) => {
+        try {
+            const url = new URL(urlStr);
+            const bodyStr = JSON.stringify(body);
+            const isHttps = url.protocol === 'https:';
+            const requestLib = isHttps ? https : http;
+            
+            const options = {
+                hostname: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname + url.search,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(bodyStr),
+                    ...headers
+                },
+                timeout: 90000
+            };
+            
+            const req = requestLib.request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+                res.on('end', () => {
+                    resolve({
+                        ok: res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300,
+                        status: res.statusCode || 500,
+                        text: async () => data,
+                        json: async () => JSON.parse(data)
+                    });
+                });
+            });
+            
+            req.on('error', (err) => {
+                reject(err);
+            });
+            
+            req.on('timeout', () => {
+                req.destroy();
+                reject(new Error('Request timed out after 90 seconds'));
+            });
+            
+            req.write(bodyStr);
+            req.end();
+        } catch (err) {
+            reject(err);
+        }
+    });
 }
 
 /**
@@ -408,5 +501,27 @@ function stopBackendServer() {
             console.error('Error stopping backend:', e);
         }
         backendProcess = null;
+    }
+}
+
+class EthrixCodeActionProvider implements vscode.CodeActionProvider {
+    public provideCodeActions(
+        document: vscode.TextDocument,
+        range: vscode.Range | vscode.Selection,
+        context: vscode.CodeActionContext,
+        token: vscode.CancellationToken
+    ): vscode.CodeAction[] {
+        if (range.isEmpty) {
+            return [];
+        }
+
+        const action = new vscode.CodeAction('Send Selection to Ethrix Chat', vscode.CodeActionKind.Refactor);
+        action.command = {
+            command: 'ethrix-forge.sendToChat',
+            title: 'Send Selection to Ethrix Chat'
+        };
+        action.isPreferred = true;
+
+        return [action];
     }
 }

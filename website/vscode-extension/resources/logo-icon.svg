@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="24" height="24">
+  <!-- Shield/Forge Shape Outline -->
+  <path d="M 50 15 L 80 30 L 80 60 L 50 85 L 20 60 L 20 30 Z" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="5" 
+        stroke-linejoin="round" />
+
+  <!-- Shield Inner Accent Line -->
+  <path d="M 50 23 L 71 33 L 71 57 L 50 74 L 29 57 L 29 33 Z" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2" 
+        stroke-dasharray="3 3" 
+        stroke-linejoin="round" />
+
+  <!-- Inner Hammer / Forge Core -->
+  <path d="M 42 32 H 58 V 40 H 53 V 60 H 47 V 40 H 42 Z" 
+        fill="currentColor" />
+</svg>

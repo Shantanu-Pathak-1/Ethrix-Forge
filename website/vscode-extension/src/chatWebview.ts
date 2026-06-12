@@ -66,11 +66,38 @@ function postJson(urlStr: string, body: any, customHeaders: Record<string, strin
 
 export class EthrixChatProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
+    private _pendingSelection?: { text: string; languageId: string };
 
     constructor(
         private readonly _extensionUri: vscode.Uri,
         private readonly _context: vscode.ExtensionContext
     ) {}
+
+    public sendSelectionToWebview(text: string, languageId: string) {
+        // First focus the chat panel to make sure it's resolved/loaded
+        vscode.commands.executeCommand('ethrixChat.focus');
+
+        if (this._view) {
+            this._view.webview.postMessage({
+                command: 'insertSelection',
+                text: text,
+                language: languageId
+            });
+        } else {
+            this._pendingSelection = { text, languageId };
+        }
+    }
+
+    private checkAndSendPendingSelection() {
+        if (this._view && this._pendingSelection) {
+            this._view.webview.postMessage({
+                command: 'insertSelection',
+                text: this._pendingSelection.text,
+                language: this._pendingSelection.languageId
+            });
+            this._pendingSelection = undefined;
+        }
+    }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -92,8 +119,16 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
                 case 'sendMessage':
                     await this.handleChatSubmit(message.text, message.history);
                     break;
+                case 'logError':
+                    console.error(`[Webview Error] ${message.message} at ${message.source}:${message.lineno}:${message.colno}\nStack: ${message.stack}`);
+                    vscode.window.showErrorMessage(`Webview Error: ${message.message}`);
+                    break;
+                case 'logConsoleError':
+                    console.error(`[Webview Console Error]`, ...message.args);
+                    break;
                 case 'getSettings':
                     this.sendSettingsToWebview();
+                    this.checkAndSendPendingSelection();
                     break;
                 case 'updateSettings':
                     await this.updateExtensionSettings(message.settings);
@@ -316,20 +351,32 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private async sendOllamaModelsToWebview() {
+    private sendOllamaModelsToWebview() {
         if (!this._view) { return; }
-        try {
-            const response = await fetch('http://127.0.0.1:11434/api/tags', { signal: AbortSignal.timeout(2000) });
-            if (response.ok) {
-                const data = (await response.json()) as any;
-                const models = (data.models || []).map((m: any) => m.name);
-                this._view.webview.postMessage({ command: 'ollamaModels', success: true, models });
-                return;
-            }
-        } catch (e) {
-            // Ignore fetch error
-        }
-        this._view.webview.postMessage({ command: 'ollamaModels', success: false, models: [] });
+        const req = http.get('http://127.0.0.1:11434/api/tags', { timeout: 2000 }, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                try {
+                    if (res.statusCode === 200) {
+                        const parsed = JSON.parse(data);
+                        const models = (parsed.models || []).map((m: any) => m.name);
+                        this._view?.webview.postMessage({ command: 'ollamaModels', success: true, models });
+                        return;
+                    }
+                } catch {}
+                this._view?.webview.postMessage({ command: 'ollamaModels', success: false, models: [] });
+            });
+        });
+        
+        req.on('error', () => {
+            this._view?.webview.postMessage({ command: 'ollamaModels', success: false, models: [] });
+        });
+        
+        req.on('timeout', () => {
+            req.destroy();
+            this._view?.webview.postMessage({ command: 'ollamaModels', success: false, models: [] });
+        });
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
@@ -830,6 +877,25 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
 
     <script>
         const vscode = acquireVsCodeApi();
+
+        // Forward webview errors to the extension host for easier debugging
+        window.onerror = function(message, source, lineno, colno, error) {
+            vscode.postMessage({
+                command: 'logError',
+                message: message,
+                source: source,
+                lineno: lineno,
+                colno: colno,
+                stack: error ? error.stack : ''
+            });
+        };
+        console.error = function(...args) {
+            vscode.postMessage({
+                command: 'logConsoleError',
+                args: args.map(String)
+            });
+        };
+
         let history = [];
         let isOnline = false;
 
@@ -842,10 +908,12 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
         };
 
         // Marked js configuration for formatting
-        marked.setOptions({
-            gfm: true,
-            breaks: true
-        });
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                gfm: true,
+                breaks: true
+            });
+        }
 
         // Initialize Webview
         window.addEventListener('message', event => {
@@ -864,12 +932,53 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
                 case 'ollamaModels':
                     handleOllamaModelsResponse(message.success, message.models);
                     break;
+                case 'insertSelection':
+                    insertSelection(message.text, message.language);
+                    break;
             }
         });
 
         // Request settings on load
         vscode.postMessage({ command: 'getSettings' });
         vscode.postMessage({ command: 'checkStatus' });
+
+        // Auto-expand textarea on typing
+        const chatInputEl = document.getElementById('chatInput');
+        if (chatInputEl) {
+            chatInputEl.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 180) + 'px';
+            });
+        }
+
+        function insertSelection(text, language) {
+            const input = document.getElementById('chatInput');
+            if (!input) return;
+
+            // Hide empty state if present
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            // Format snippet with markdown code fence
+            const lang = language || '';
+            const codeSnippet = "\`\`\`" + lang + "\\n" + text + "\\n\`\`\`\\n";
+
+            if (input.value) {
+                input.value += "\\n" + codeSnippet;
+            } else {
+                input.value = codeSnippet;
+            }
+
+            // Adjust height
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+
+            input.focus();
+            // Move cursor to the end
+            input.selectionStart = input.selectionEnd = input.value.length;
+        }
 
         function populateSettings() {
             document.getElementById('settingBackendUrl').value = configSettings.backendUrl;
@@ -1007,6 +1116,7 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
             // Append user message
             appendMessage('user', text);
             input.value = '';
+            input.style.height = ''; // Reset height to default 38px
             input.disabled = true;
             document.getElementById('sendBtn').disabled = true;
 
@@ -1047,11 +1157,18 @@ export class EthrixChatProvider implements vscode.WebviewViewProvider {
             msgDiv.className = 'message ' + role;
             
             if (role === 'ai') {
-                msgDiv.innerHTML = marked.parse(text);
+                if (typeof marked !== 'undefined') {
+                    msgDiv.innerHTML = marked.parse(text);
+                } else {
+                    msgDiv.textContent = text;
+                    msgDiv.style.whiteSpace = 'pre-wrap';
+                }
                 // Highlight code blocks
-                setTimeout(() => {
-                    Prism.highlightAllUnder(msgDiv);
-                }, 50);
+                if (typeof Prism !== 'undefined') {
+                    setTimeout(() => {
+                        Prism.highlightAllUnder(msgDiv);
+                    }, 50);
+                }
             } else {
                 msgDiv.textContent = text;
             }
