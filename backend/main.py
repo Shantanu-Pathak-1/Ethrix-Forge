@@ -743,6 +743,9 @@ class FixResponse(BaseModel):
     explanation: str = Field(description="Detailed step-by-step explanation of the optimizations and corrections made")
 
 class DocGenResponse(BaseModel):
+    architecture_overview: str = Field(description="High-level architectural overview or Mermaid flow diagram")
+    api_reference: str = Field(description="Markdown table of functions/classes, parameters, and descriptions")
+    usage_examples: str = Field(description="Code examples showing how to import and use the code")
     documented_code: str = Field(description="The input code modified to include high-quality inline comments and Google/Sphinx style docstrings")
     commit_message: str = Field(description="A concise, conventional git commit message summarizing the changes")
 
@@ -1356,12 +1359,32 @@ def fix_code(payload: CodePayload):
     }
 
 
+def safe_to_markdown_string(val) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list):
+        if len(val) > 0 and isinstance(val[0], dict):
+            keys = list(val[0].keys())
+            headers = " | ".join(keys)
+            separator = " | ".join(["---"] * len(keys))
+            rows = []
+            for item in val:
+                row = " | ".join(str(item.get(k, "")) for k in keys)
+                rows.append(row)
+            return f"| {headers} |\n| {separator} |\n" + "\n".join(f"| {r} |" for r in rows)
+        return "\n".join(f"- {str(item)}" for item in val)
+    if isinstance(val, dict):
+        return "\n".join(f"- **{k}**: {str(v)}" for k, v in val.items())
+    return str(val)
+
 
 def process_docgen_chunk(idx: int, chunk: str, payload: CodePayload, system_instruction: str, lang_info: str, api_key: Optional[str]):
     groq_api_key_var.set(api_key)
     messages = [
         {"role": "system", "content": system_instruction},
-        {"role": "user", "content": f"Add inline comments and docstrings to the following code snippet{lang_info}:\n\n```\n{chunk}\n```"}
+        {"role": "user", "content": f"Analyze the following code snippet and generate documentation suite including architecture, API tables, usage recipes, and inline docstrings/comments{lang_info}:\n\n```\n{chunk}\n```"}
     ]
     try:
         log_debug(f"[docgen] chunk {idx+1} provider={payload.provider} model={payload.model} code_len={len(chunk)}")
@@ -1380,11 +1403,14 @@ def process_docgen_chunk(idx: int, chunk: str, payload: CodePayload, system_inst
         data = parse_json_robust(content)
         documented = data.get("documented_code", chunk)
         commit_msg = data.get("commit_message", "")
+        arch = data.get("architecture_overview", "No architecture overview generated.")
+        api_ref = data.get("api_reference", "No API reference generated.")
+        usage = data.get("usage_examples", "No usage examples generated.")
         
-        return documented, commit_msg, None
+        return documented, commit_msg, arch, api_ref, usage, None
     except Exception as e:
         log_debug(f"[docgen] chunk {idx+1} EXCEPTION: {type(e).__name__}: {str(e)}")
-        return chunk, "", e
+        return chunk, "", "Error generating overview.", "Error generating API reference.", "Error generating usage examples.", e
 
 
 @app.post("/docgen", response_model=DocGenResponse)
@@ -1392,17 +1418,18 @@ def docgen_code(payload: CodePayload):
     lang_info = f" in {payload.language}" if payload.language else ""
     
     system_instruction = (
-        "You are a technical writer and software documentation expert. "
-        "Analyze the provided code and add professional inline comments and standard docstrings (Google or Sphinx style) for functions, classes, and methods.\n"
-        "You MUST NEVER truncate, summarize, or omit the documented code with placeholders or excuses like 'for brevity' or 'the code is too extensive'. Always return the complete documented code.\n\n"
-        "Additionally, write a concise, clear conventional git commit message that represents this documentation/refactoring change. "
+        "You are an expert technical writer and software architect. "
+        "Analyze the provided code and generate a comprehensive documentation suite.\n"
         "You MUST return your response strictly as a JSON object matching the following structure:\n"
         "{\n"
-        '  "documented_code": "The input code modified to include high-quality inline comments and Google/Sphinx style docstrings (never truncated or omitted)",\n'
-        '  "commit_message": "A conventional git commit message (e.g. docs: add inline documentation to user data parser)"\n'
+        '  "architecture_overview": "A clear description of the module architecture, design patterns, and optionally a Mermaid.js flowchart mapping the code execution flow (quote node labels containing special characters, e.g. id[\\\"Label\\\"])",\n'
+        '  "api_reference": "A markdown table listing all classes, methods, and functions with their signature, parameters, return value, and descriptions",\n'
+        '  "usage_examples": "Clear, copy-pasteable usage examples showing how to import, instantiate, and execute the code",\n'
+        '  "documented_code": "The complete input code modified to include high-quality inline comments and Google/Sphinx style docstrings (never truncated or omitted)",\n'
+        '  "commit_message": "A conventional git commit message (e.g. docs: document user authentication system)"\n'
         "}\n\n"
         "CRITICAL JSON ESCAPING RULE:\n"
-        "All double quotes (\") inside any JSON string values (including code snippets and messages) MUST be escaped with a single backslash (e.g., \\\").\n"
+        "All double quotes (\") inside any JSON string values (including code snippets and documentation) MUST be escaped with a single backslash (e.g., \\\").\n"
         "DO NOT use double-escaped backslashes (like \\\\\") or quadruple backslashes (like \\\\\\\"). Ensure that the generated response is standard, valid JSON."
     )
 
@@ -1421,8 +1448,11 @@ def docgen_code(payload: CodePayload):
         
     documented_parts = []
     commit_messages = []
+    architecture_parts = []
+    api_reference_parts = []
+    usage_examples_parts = []
     
-    for idx, (documented, commit_msg, err) in enumerate(results):
+    for idx, (documented, commit_msg, arch, api_ref, usage, err) in enumerate(results):
         if err and len(chunks) == 1:
             if isinstance(err, HTTPException):
                 raise err
@@ -1433,6 +1463,12 @@ def docgen_code(payload: CodePayload):
         documented_parts.append(documented)
         if commit_msg:
             commit_messages.append(commit_msg)
+        if arch:
+            architecture_parts.append(arch)
+        if api_ref:
+            api_reference_parts.append(api_ref)
+        if usage:
+            usage_examples_parts.append(usage)
             
     combined_code = ""
     for idx, part in enumerate(documented_parts):
@@ -1441,8 +1477,14 @@ def docgen_code(payload: CodePayload):
         combined_code += part
         
     final_commit = commit_messages[0] if commit_messages else "docs: add inline documentation"
+    final_arch = "\n\n---\n\n".join(safe_to_markdown_string(x) for x in architecture_parts) if architecture_parts else "No architecture overview generated."
+    final_api_ref = "\n\n---\n\n".join(safe_to_markdown_string(x) for x in api_reference_parts) if api_reference_parts else "No API reference generated."
+    final_usage = "\n\n---\n\n".join(safe_to_markdown_string(x) for x in usage_examples_parts) if usage_examples_parts else "No usage examples generated."
     
     return {
+        "architecture_overview": final_arch,
+        "api_reference": final_api_ref,
+        "usage_examples": final_usage,
         "documented_code": combined_code,
         "commit_message": final_commit
     }

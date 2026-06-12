@@ -2768,16 +2768,19 @@
         clearTimeout(timeoutId);
         if (!res.ok) throw new Error(`API ${res.status}`);
         const json = await res.json();
-        if (action === 'analyze') reportMarkdown = json.raw_markdown_report || json.report || JSON.stringify(json, null, 2);
-        else if (action === 'fix') {
+        if (action === 'analyze') {
+          reportMarkdown = json.raw_markdown_report || json.report || JSON.stringify(json, null, 2);
+        } else if (action === 'fix') {
           if (json.refactored_code && json.refactored_code.trim()) {
-            reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}\n\n---\n## Refactored Code\n\`\`\`${lang}\n${json.refactored_code}\n\`\`\``;
+            reportMarkdown = `\`\`\`${lang}\n${json.refactored_code}\n\`\`\`\n\n---\n\n### 🔧 Explanation of Changes:\n${json.explanation}`;
           } else {
-            reportMarkdown = `# Refactored Source Code\n\n## Changes Made\n${json.explanation}`;
+            reportMarkdown = `✨ **Your code is completely healthy, correct, and bug-free!**\n\n---\n\n${json.explanation}`;
           }
+        } else {
+          reportMarkdown = `# Architecture & Design Overview\n${json.architecture_overview}\n\n---\n## 📋 API & Functions Reference\n${json.api_reference}\n\n---\n## 🚀 Usage Recipes & Examples\n${json.usage_examples}\n\n---\n## 📝 Documented Source Code\n\`\`\`${lang}\n${json.documented_code}\n\`\`\`\n\n---\n*Commit message suggestion: \`${json.commit_message}\`*`;
         }
-        else reportMarkdown = `# Automated Documentation\n\n## Commit Message\n\`${json.commit_message}\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${json.documented_code}\n\`\`\``;
-      } catch {
+      } catch (err) {
+        console.error(err);
         isOffline = true;
         showToast('⚠️ Server offline — running fallback diagnostics.');
         reportMarkdown = generateFallbackReport(code, lang, action);
@@ -2825,8 +2828,8 @@
       const score = Math.max(35, 100 - longLines * 4 - todos * 5 - (loops > 3 ? 10 : 0));
       const grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 65 ? 'C' : 'D';
       if (action === 'analyze') return `# ⚠️ Offline Diagnostics (Static Scan)\n> **API Server**: [WARN] Unreachable.\n\n---\n## Quality Grade\n[${score >= 75 ? 'OK' : 'WARN'}] Health: **${score}/100** (Grade **${grade}**)\n\n---\n## Gutter Checks\n- **Lines**: \`${lc}\`\n- **Loops**: \`${loops}\`\n- **Long lines (>80 chars)**: \`${longLines}\`\n- **TODO markers**: \`${todos}\``;
-      if (action === 'fix') return `# ⚠️ Offline Refactoring\n> **Server Status**: [WARN] Unreachable.\n\n---\n## Refactored Output\n\`\`\`${lang}\n${code.split('\n').map(l => l.trimEnd()).join('\n').trimEnd()}\n\`\`\``;
-      return `# ⚠️ Offline Docgen\n> **Server Status**: [WARN] Unreachable.\n\n---\n## Suggested Commit\n\`docs: document ${lang} code\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${code}\n\`\`\``;
+      if (action === 'fix') return `\`\`\`${lang}\n${code.split('\n').map(l => l.trimEnd()).join('\n').trimEnd()}\n\`\`\`\n\n---\n\n### ⚠️ Offline Refactoring\n> **Server Status**: [WARN] Unreachable. Displaying raw source code.`;
+      return `# ⚠️ Offline Documentation Generator\n> **Server Status**: [WARN] Unreachable.\n\n---\n## Module Info\n- **File Language**: \`${lang}\`\n- **Total Lines**: \`${lc}\`\n- **TODOs/Issues**: \`${todos}\`\n\n---\n## Suggested Commit\n\`docs: document ${lang} codebase\`\n\n---\n## Documented Code\n\`\`\`${lang}\n${code}\n\`\`\``;
     }
 
     // ── Metrics ─────────────────────────────────────────
